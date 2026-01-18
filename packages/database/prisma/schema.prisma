@@ -1,0 +1,563 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator prismabox {
+  provider                    = "prismabox"
+  typeboxImportDependencyName = "elysia"
+  typeboxImportVariableName   = "t"
+  inputModel                  = true
+  output                      = "../src/generated/prismabox"
+}
+
+// better-auth auto-generative
+model User {
+  id            String       @id
+  name          String
+  email         String
+  emailVerified Boolean      @default(false)
+  image         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+  role          String?
+  banned        Boolean?     @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  sessions      Session[]
+  accounts      Account[]
+  members       Member[]
+  invitations   Invitation[]
+
+  twoFactorEnabled Boolean?    @default(false)
+  twofactors       TwoFactor[]
+
+  deletedProducts Product[]
+  sells           Sell[]
+  orders          Order[]
+  stockMovements  StockMovement[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+// better-auth auto-generative
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy       String?
+  activeOrganizationId String?
+  activeTenantId       String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+// better-auth auto-generative
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([providerId, accountId])
+  @@map("account")
+}
+
+// better-auth auto-generative
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// better-auth auto-generative
+model Organization {
+  id        String   @id
+  name      String
+  slug      String?
+  logo      String?
+  createdAt DateTime
+  metadata  String?
+
+  members     Member[]
+  invitations Invitation[]
+
+  products   Product[]
+  categories Category[]
+  campaigns  Campaign[]
+  taxes      Tax[]
+
+  sells  Sell[]
+  orders Order[]
+
+  stocks         Stock[]
+  stockMovements StockMovement[]
+  tables         Table[]
+
+  // @@unique([slug])
+  @@map("organization")
+}
+
+// better-auth auto-generative
+model TwoFactor {
+  id          String @id
+  secret      String
+  backupCodes String
+  userId      String
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+// better-auth auto-generative
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String
+  createdAt      DateTime
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+
+// better-auth auto-generative
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String
+  expiresAt      DateTime
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
+}
+
+//
+// Inventory
+//
+model Product {
+  id   String @id @default(uuid(7))
+  name String
+
+  /// @prismabox.typeOverwrite=t.String()
+  price Decimal
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  categoryId String
+
+  cartProducts CartProduct[]
+
+  appliedTaxes Tax[]
+
+  createdAt DateTime @default(now())
+
+  deletedAt            DateTime?
+  deletedBy            User?                 @relation(fields: [deletedById], references: [id], onDelete: SetNull)
+  deletedById          String?
+  stocks               Stock[]
+  campaignTarget       CampaignTarget?       @relation(fields: [campaignTargetId], references: [id], onDelete: SetNull)
+  campaignTargetId     String?
+  campaignApplications CampaignApplication[]
+
+  @@index([organizationId, deletedAt])
+  @@index([categoryId])
+  @@index([campaignTargetId])
+}
+
+model Category {
+  id String @id @default(uuid(7))
+
+  name     String
+  products Product[]
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  createdAt DateTime @default(now())
+
+  appliedTaxes Tax[]
+
+  campaignTarget   CampaignTarget? @relation(fields: [campaignTargetId], references: [id], onDelete: SetNull)
+  campaignTargetId String?
+
+  @@unique([organizationId, name])
+  @@index([campaignTargetId])
+}
+
+model Stock {
+  id String @id @default(uuid(7))
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  quantity Int
+
+  // Alerts
+  minQuantity Int  @default(0)
+  maxQuantity Int?
+
+  lastRestockedAt DateTime?
+  stockMovements  StockMovement[]
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@unique([organizationId, productId])
+  @@index([productId])
+}
+
+enum StockMovementReason {
+  SALE
+  RESTOCK
+  ADJUSTMENT
+  REVERSAL
+}
+
+model StockMovement {
+  id String @id @default(uuid(7))
+
+  stock   Stock  @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  stockId String
+
+  quantityChange Int // signed integer, affetcs quantity directly (-) for sale (+) for restock
+
+  reason StockMovementReason // "SALE", "RESTOCK", "ADJUSTMENT", "REVERSAL"
+
+  createdAt DateTime @default(now())
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  @@index([stockId, createdAt])
+  @@index([organizationId, createdAt])
+}
+
+model Tax {
+  id String @id @default(uuid(7))
+
+  name     String
+  priority Int
+
+  /// @prismabox.typeOverwrite=t.String()
+  rate Decimal
+
+  isFixed      Boolean @default(false)
+  isCumulative Boolean @default(false)
+
+  appliedProducts   Product[]
+  appliedCategories Category[]
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  cartProductTaxes CartProductTax[]
+
+  @@unique([organizationId, name])
+}
+
+//
+// Campaigns
+//
+enum CampaignType {
+  BASKET
+  PRODUCT
+}
+
+model Campaign {
+  id String @id @default(uuid(7))
+
+  name String
+  code String
+
+  /// @prismabox.typeOverwrite=t.String()
+  value   Decimal
+  isFixed Boolean @default(false)
+
+  type CampaignType
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  application    CampaignApplication[]
+  availabilities CampaignAvailability[]
+  targets        CampaignTarget[]
+
+  @@unique([organizationId, code])
+  @@index([code])
+}
+
+enum CampaignTargetType {
+  PRODUCTS
+  CATEGORIES
+}
+
+model CampaignTarget {
+  id String @id @default(uuid(7))
+
+  active Boolean @default(true)
+
+  type CampaignTargetType
+
+  products   Product[]
+  categories Category[]
+
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String?
+
+  @@index([campaignId])
+}
+
+model CampaignAvailability {
+  id String @id @default(uuid(7))
+
+  active Boolean @default(true)
+
+  before DateTime?
+  after  DateTime?
+
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String?
+
+  @@index([campaignId])
+}
+
+model CampaignApplication {
+  id String @id @default(uuid(7))
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  /// @prismabox.typeOverwrite=t.String()
+  discountAmount Decimal
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId String
+
+  sell   Sell?   @relation(fields: [sellId], references: [id], onDelete: Cascade)
+  sellId String?
+
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String?
+
+  appliedAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([sellId])
+  @@index([orderId])
+  @@index([campaignId, productId])
+}
+
+//
+// Payment and Recordings
+//
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  MOBILE_PAYMENT
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  OPEN
+  CLOSED
+}
+
+model Payment {
+  id String @id @default(uuid(7))
+
+  /// @prismabox.typeOverwrite=t.String()
+  amount Decimal
+  method PaymentMethod
+  status PaymentStatus @default(PENDING)
+
+  sell   Sell   @relation(fields: [sellId], references: [id], onDelete: Cascade)
+  sellId String @unique
+
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String @unique
+
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([status, createdAt])
+}
+
+model Sell {
+  id String @id @default(uuid(7))
+
+  products  CartProduct[]
+  createdAt DateTime      @default(now())
+
+  // Reversal mechanism
+  isReversal     Boolean @default(false)
+  reversedSell   Sell?   @relation("SellReversal", fields: [reversedSellId], references: [id], onDelete: SetNull)
+  reversedSellId String? @unique
+  reversalOf     Sell?   @relation("SellReversal")
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  payment              Payment?
+  campaignApplications CampaignApplication[]
+
+  issuer   User   @relation(fields: [issuerId], references: [id])
+  issuerId String @map("userId")
+
+  @@index([createdAt])
+  @@index([organizationId, createdAt])
+}
+
+model Table {
+  id String @id @default(uuid(7))
+
+  name String
+
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+
+  orders Order[]
+}
+
+model Order {
+  id String @id @default(uuid(7))
+
+  products  CartProduct[]
+  status    OrderStatus   @default(OPEN)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  payment              Payment?
+  campaignApplications CampaignApplication[]
+
+  issuer   User    @relation(fields: [issuerId], references: [id])
+  issuerId String  @map("userId")
+  table    Table?  @relation(fields: [tableId], references: [id])
+  tableId  String?
+
+  @@index([status, createdAt])
+  @@index([organizationId, status])
+}
+
+model CartProductTax {
+  id String @id @default(uuid(7))
+
+  cartProduct   CartProduct @relation(fields: [cartProductId], references: [id], onDelete: Cascade)
+  cartProductId String
+
+  tax   Tax    @relation(fields: [taxId], references: [id], onDelete: Cascade)
+  taxId String
+
+  //
+  // For snapshot
+  //
+  taxName   String
+  isFixed   Boolean
+  priority  Int
+  /// @prismabox.typeOverwrite=t.String()
+  taxRate   Decimal
+  /// @prismabox.typeOverwrite=t.String()
+  taxAmount Decimal
+
+  // For cumulative calculations
+  /// @prismabox.typeOverwrite=t.String()
+  baseAmount Decimal
+
+  @@index([cartProductId])
+  @@index([taxId])
+}
+
+model CartProduct {
+  id String @id @default(uuid(7))
+
+  quantity Int
+
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId String
+
+  //
+  // For Snapshot
+  //
+  productName  String
+  /// @prismabox.typeOverwrite=t.String()
+  priceAtSale  Decimal
+  appliedTaxes CartProductTax[]
+  /// @prismabox.typeOverwrite=t.String()
+  subtotal     Decimal // quantity * priceAtSale
+  /// @prismabox.typeOverwrite=t.String()
+  totalTax     Decimal // Sum of all appliedTaxes.taxAmount
+  /// @prismabox.typeOverwrite=t.String()
+  total        Decimal // subtotal + totalTax
+
+  sell   Sell?   @relation(fields: [sellId], references: [id], onDelete: Cascade)
+  sellId String?
+
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String?
+
+  @@index([productId])
+  @@index([sellId, productId])
+  @@index([orderId, productId])
+}

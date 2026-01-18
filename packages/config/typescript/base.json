@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Default",
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "isolatedModules": false,
+    "module": "esnext",
+    "moduleDetection": "force",
+    "moduleResolution": "bundler",
+    "noUncheckedIndexedAccess": false,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "composite": true,
+    "incremental": true,
+    "verbatimModuleSyntax": false,
+    "target": "esnext",
+    "baseUrl": "../../../",
+    "paths": {
+      "@frontend/*": [
+        "apps/frontend/app/*"
+      ],
+      "@backend": [
+        "apps/backend/src/index.ts"
+      ],
+      "@backend/*": [
+        "apps/backend/src/*"
+      ],
+      "@backend/lib/*": [
+        "apps/backend/lib/*"
+      ],
+      "@database": [
+        "packages/database/src/index.ts"
+      ],
+      "@database/generated/*": [
+        "packages/database/src/generated/*"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "extends": "config/typescript/base.json",
+  "compilerOptions": {
+    "jsx": "react",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "noEmit": false,
+    "preserveSymlinks": true,
+
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+
+    "paths": {
+      "@/*": ["./src/*"],
+      "@frontend/*": ["../frontend/app/*"],
+      "@backend": ["src/main.ts"],
+      "@backend/*": ["./src/*"],
+      "@backend/lib/*": ["../backend/lib/*"],
+
+      // ÖNEMLİ: src yerine dist'e işaret etsin
+      "@database": ["../../packages/database/src/index.ts"],
+      "@database/generated/*": ["../../packages/database/src/generated/*"]
+    }
+  },
+  "references": [{ "path": "../../packages/database" }],
+  "include": ["src", "test", "scripts", "lib"],
+  "exclude": ["node_modules", "dist"]
+}

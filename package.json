@@ -1,0 +1,27 @@
+{
+  "name": "tachyon",
+  "module": "index.ts",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "private": true,
+  "scripts": {
+    "backend:dev": "bun run --watch apps/backend/src/main.ts",
+    "frontend:dev": "cd apps/frontend && bun run dev",
+    "db:generate": "bunx prisma generate --schema=packages/database/prisma/schema.prisma",
+    "db:push": "bunx prisma db push --schema=packages/database/prisma/schema.prisma",
+    "db:seed": "bun run apps/backend/src/seed.ts",
+    "backend:lint": "cd apps/backend && eslint",
+    "frontend:lint": "cd apps/frontend && eslint"
+  },
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ]
+}

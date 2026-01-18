@@ -1,0 +1,5 @@
+<template>
+  <h1 class="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
+    <slot />
+  </h1>
+</template>
