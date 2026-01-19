@@ -62,8 +62,8 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
   },
   {
     header: 'Eylemler',
-    accessorFn: (a) => a.id,
-    cell: () =>
+    accessorKey: 'id',
+    cell: (a) =>
       h(DataTableActions, {
         actions: [
           {
@@ -74,7 +74,9 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
           },
           {
             title: 'Düzenle',
-            action: () => {},
+            action: () => {
+              useRouter().push(`/dash/inventory/products/${a.renderValue()}`);
+            },
             group: 'default',
             icon: Edit3,
           },

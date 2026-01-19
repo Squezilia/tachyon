@@ -62,31 +62,34 @@ const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
     },
   },
   {
+    accessorKey: 'id',
     header: 'Actions',
-    cell: () =>
+    cell: (a) =>
       h(DataTableActions, {
         actions: [
           {
-            title: 'Details',
+            title: 'Detaylar',
             action: () => {},
             group: 'default',
             icon: Eye,
           },
           {
-            title: 'Duplicate',
+            title: 'Kopyala',
             action: () => {},
             group: 'default',
             icon: Copy,
           },
           {
-            title: 'Edit',
-            action: () => {},
+            title: 'Düzenle',
+            action: () => {
+              useRouter().push(`/dash/management/taxes/${a.renderValue()}`);
+            },
             group: 'default',
             icon: Edit3,
           },
 
           {
-            title: 'Delete',
+            title: 'Sil',
             action: () => {},
             group: 'danger',
             icon: Trash2,

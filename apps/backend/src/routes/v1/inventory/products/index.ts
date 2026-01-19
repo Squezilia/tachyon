@@ -195,11 +195,20 @@ export default () =>
           return status(product.status, product.response);
         }
 
-        return product;
+        if (!product) return status(404, tr.error.product.notFound);
+
+        return {
+          ...product,
+          price: product.price.toString(),
+        };
       },
       {
         auth: true,
-        body: ProductPlain,
+        response: {
+          ...ResponseSchemaSet,
+          200: ProductPlain,
+          403: ErrorResponseSchema,
+        },
       }
     )
     .get(
@@ -233,17 +242,26 @@ export default () =>
           return status(product.status, product.response);
         }
 
-        return product;
+        return product.map((v) => {
+          return {
+            ...v,
+            price: v.price.toString(),
+          };
+        });
       },
       {
         auth: true,
-        body: t.Array(
-          t.Object({
-            name: t.String(),
-            id: t.String(),
-            price: t.String(),
-          })
-        ),
+        response: {
+          ...ResponseSchemaSet,
+          200: t.Array(
+            t.Object({
+              name: t.String(),
+              id: t.String(),
+              price: t.String(),
+            })
+          ),
+          403: ErrorResponseSchema,
+        },
       }
     )
     .patch(
@@ -288,7 +306,10 @@ export default () =>
           tags: ['Inventory', 'Products'],
           security: [{ CookieAuth: [] }],
         },
-        body: ProductPlainInputUpdate,
+        body: t.Composite([
+          ProductPlainInputUpdate,
+          t.Object({ categoryId: t.Optional(t.String()) }),
+        ]),
         response: {
           ...ResponseSchemaSet,
           200: ProductPlain,

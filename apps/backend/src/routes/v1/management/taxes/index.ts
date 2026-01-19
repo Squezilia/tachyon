@@ -139,6 +139,49 @@ export default () =>
         },
       }
     )
+    .get(
+      '/get/:id',
+      async ({ session, params, request: { headers }, status }) => {
+        if (!session.activeOrganizationId)
+          return status(400, tr.error.organization.noActive);
+
+        if (
+          !(await auth.api.hasPermission({
+            headers,
+            body: { permissions: { tax: ['view'] } },
+          }))
+        )
+          return status(403, tr.error.organization.insufficentPermission);
+
+        const tax = await prisma.tax
+          .findFirst({
+            where: {
+              id: params.id,
+              organizationId: session.activeOrganizationId,
+            },
+          })
+          .catch(mapPrismaError);
+
+        if (tax instanceof MappedPrismaError) {
+          return status(tax.status, tax.response);
+        }
+
+        if (!tax) return status(404, tr.error.tax.notFound);
+
+        return {
+          ...tax,
+          rate: tax.rate.toString(),
+        };
+      },
+      {
+        auth: true,
+        response: {
+          ...ResponseSchemaSet,
+          200: TaxPlain,
+          403: ErrorResponseSchema,
+        },
+      }
+    )
     .patch(
       '/update/:id',
       async ({ request: { headers }, status, params, body, session }) => {

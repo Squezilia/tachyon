@@ -154,11 +154,17 @@ export default () =>
           return status(category.status, category.response);
         }
 
+        if (!category) return status(404, tr.error.category.notFound);
+
         return category;
       },
       {
         auth: true,
-        body: CategoryPlain,
+        response: {
+          ...ResponseSchemaSet,
+          200: CategoryPlain,
+          403: ErrorResponseSchema,
+        },
       }
     )
     .get(
@@ -195,12 +201,16 @@ export default () =>
       },
       {
         auth: true,
-        body: t.Array(
-          t.Object({
-            name: t.String(),
-            id: t.String(),
-          })
-        ),
+        response: {
+          ...ResponseSchemaSet,
+          200: t.Array(
+            t.Object({
+              name: t.String(),
+              id: t.String(),
+            })
+          ),
+          403: ErrorResponseSchema,
+        },
       }
     )
     .patch(

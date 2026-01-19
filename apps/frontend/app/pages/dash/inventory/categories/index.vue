@@ -36,7 +36,8 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
   },
   {
     header: 'Eylemler',
-    cell: () =>
+    accessorKey: 'id',
+    cell: (a) =>
       h(DataTableActions, {
         actions: [
           {
@@ -47,7 +48,9 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
           },
           {
             title: 'Düzenle',
-            action: () => {},
+            action: () => {
+              useRouter().push(`/dash/inventory/categories/${a.renderValue()}`);
+            },
             group: 'default',
             icon: Edit3,
           },

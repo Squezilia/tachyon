@@ -21,6 +21,7 @@ export default defineNuxtConfig({
         preserveSymlinks: false,
         verbatimModuleSyntax: false,
         outDir: 'dist',
+        skipLibCheck: true,
 
         baseUrl: '.',
         paths: {
@@ -35,10 +36,6 @@ export default defineNuxtConfig({
         },
       },
     },
-  },
-
-  experimental: {
-    typedPages: true,
   },
 
   runtimeConfig: {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import FormScaffold from '@/components/FormScaffold.vue';
 import {
   Card,
@@ -24,7 +24,22 @@ const values = ref<FormType>({
   quantity: 0,
 });
 
-const products = ref<ProductOption[]>([]);
+const products = await useApi<ProductOption[]>(
+  '/v1/inventory/products/get/raw',
+  {
+    async onResponseError(context) {
+      if (!context.response) return;
+      if (context.response.status >= 400 || context.response.status < 500) {
+        const body = (await context.response.json()) as {
+          error: string;
+          reason: string;
+        };
+
+        toast(body.error, { description: body.reason });
+      }
+    },
+  }
+);
 
 function onSubmit(values: FormType) {
   toast.promise<string>(
@@ -38,8 +53,6 @@ function onSubmit(values: FormType) {
           lastRestockedAt: values.lastRestockedAt,
           productId: values.productId,
         },
-        responseType: 'json',
-        credentials: 'include',
         async onResponseError(context) {
           if (context.response.status >= 400) {
             const body = (await context.response._data) as {
@@ -69,30 +82,8 @@ function onSubmit(values: FormType) {
 }
 
 const selectedProduct = computed(() =>
-  products.value.find((product) => product.id === values.value.productId)
+  products.data.value?.find((product) => product.id === values.value.productId)
 );
-
-onMounted(async () => {
-  const productList = await useNuxtApp().$api(
-    '/v1/inventory/products/get/raw',
-    {
-      credentials: 'include',
-      async onRequestError(context) {
-        if (!context.response) return;
-        if (context.response.status >= 400 || context.response.status < 500) {
-          const body = (await context.response.json()) as {
-            error: string;
-            reason: string;
-          };
-
-          toast(body.error, { description: body.reason });
-        }
-      },
-    }
-  );
-
-  products.value = productList as ProductOption[];
-});
 </script>
 
 <template>
@@ -112,10 +103,7 @@ onMounted(async () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResourceFormsStockForm
-              v-model:values="values"
-              @submit="onSubmit"
-            />
+            <ResourceFormsStockForm v-model="values" @submit="onSubmit" />
           </CardContent>
         </Card>
       </template>

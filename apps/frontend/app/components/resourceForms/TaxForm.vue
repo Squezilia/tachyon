@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useForm, Field as VeeField } from 'vee-validate';
-import { toTypedSchema } from '@vee-validate/zod';
+import { Field as VeeField } from 'vee-validate';
 import { Loader2 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,35 +18,28 @@ const formSchema = z.object({
 
 export type FormType = Partial<typeof formSchema._type>;
 
-const modelValues = defineModel('values', {
-  type: Object as PropType<FormType>,
-});
-
-const { handleSubmit, isSubmitting, setValues, resetForm, values } = useForm({
-  validationSchema: toTypedSchema(formSchema),
-  initialValues: modelValues.value,
-});
-
-watch(modelValues, (newv) => {
-  if (newv) setValues(newv);
-  else resetForm();
-});
-
-watch(values, (newv) => {
-  modelValues.value = newv;
-});
-
-const emit = defineEmits<{
-  submit: [FormType];
+defineProps<{
+  modelValue: FormType;
+  isSubmitting?: boolean;
 }>();
 
-const onSubmit = handleSubmit(async (values) => {
-  emit('submit', values);
-});
+defineEmits<{
+  submit: [FormType];
+  'update:modelValue': [FormType | undefined];
+  'update:isSubmitting': [boolean];
+}>();
 </script>
 
 <template>
-  <form class="space-y-6" @submit="onSubmit">
+  <ResourceFormsFormBase
+    :model-value="modelValue"
+    :is-submitting="isSubmitting"
+    class="space-y-6"
+    :form-schema="formSchema"
+    @update:model-value="$emit('update:modelValue', $event)"
+    @update:is-submitting="$emit('update:isSubmitting', $event)"
+    @submit="(values) => $emit('submit', values)"
+  >
     <VeeField v-slot="{ field, errors }" name="name">
       <Field :data-invalid="!!errors.length">
         <FieldLabel for="name"> Vergi Adı </FieldLabel>
@@ -159,5 +151,5 @@ const onSubmit = handleSubmit(async (values) => {
         <span>{{ isSubmitting ? 'Creating...' : 'Create tax' }}</span>
       </Button>
     </div>
-  </form>
+  </ResourceFormsFormBase>
 </template>

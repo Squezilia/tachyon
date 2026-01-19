@@ -11,41 +11,26 @@ import {
 import { toast } from 'vue-sonner';
 import formatPrice from '~/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/ProductForm.vue';
+import type { ErrorResponseSchema } from '@backend/model';
+import type { ProductPlain } from '@database';
 
 definePageMeta({
   middleware: ['auth'],
 });
-
-type CategoryOption = { name: string; id: string }[];
 
 const values = ref<FormType>({
   name: '',
   categoryId: '',
   price: 0,
 });
-
-const categoryList = await useApi<CategoryOption>(
-  '/v1/inventory/categories/get/raw',
-  {
-    async onResponseError(context) {
-      if (!context.response) return;
-      if (context.response.status >= 400 || context.response.status < 500) {
-        const body = (await context.response.json()) as {
-          error: string;
-          reason: string;
-        };
-
-        toast(body.error, { description: body.reason });
-      }
-    },
-  }
-);
+const categoryList = ref<{ name: string; id: string }[]>([]);
+const id = useRoute().params.id;
 
 function onSubmit(values: FormType) {
   toast.promise<string>(
     new Promise((resolve, reject) =>
-      useApi('/v1/inventory/products/create', {
-        method: 'POST',
+      useApi(`/v1/inventory/products/update/${id}`, {
+        method: 'PATCH',
         body: {
           name: values.name,
           price: '' + values.price,
@@ -65,14 +50,14 @@ function onSubmit(values: FormType) {
           }
         },
         async onResponse(context) {
-          if (context.response.status !== 201) return;
-          resolve('Ürün Oluşturuldu!');
+          if (context.response.status !== 200) return;
+          resolve('Ürün Düzenlendi!');
           useRouter().push('/dash/inventory/products');
         },
       })
     ),
     {
-      loading: 'Ürün Oluşturuluyor...',
+      loading: 'Ürün Düzenleniyor...',
       success: (data: string) => data,
       error: (data: string) => data,
     }
@@ -82,17 +67,49 @@ function onSubmit(values: FormType) {
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Ürün');
 const categoryName = computed(
   () =>
-    categoryList.data.value?.find((item) => item.id === values.value.categoryId)
-      ?.name
+    categoryList.value.find((item) => item.id === values.value.categoryId)?.name
 );
+
+onMounted(async () => {
+  const fetchedList = await useApi<{ name: string; id: string }[]>(
+    '/v1/inventory/categories/get/raw'
+  ).catch((err: { error: string; reason: string }) => {
+    toast(err.error, { description: err.reason });
+    return;
+  });
+
+  if (!fetchedList || !fetchedList.data.value) return;
+
+  categoryList.value = fetchedList.data.value;
+
+  const fetchedValues = await useApi<typeof ProductPlain.static>(
+    `/v1/inventory/products/get/${id}`,
+    {
+      onResponseError(context) {
+        if (context.response.status >= 400) {
+          const body = context.response
+            ._data as typeof ErrorResponseSchema.static;
+          toast(body.error, { description: body.reason });
+        }
+      },
+    }
+  );
+
+  if (!fetchedValues.data.value) return;
+
+  values.value = {
+    name: fetchedValues.data.value.name,
+    price: +fetchedValues.data.value.price,
+    categoryId: fetchedValues.data.value.categoryId,
+  };
+});
 </script>
 
 <template>
   <div>
     <FormScaffold
       section="Envanter"
-      title="Ürün Oluştur"
-      description="Bir kategori altında yeni bir ürün oluşturun."
+      title="Ürün Düzenle"
       back-to="/dash/inventory/products"
     >
       <template #main>

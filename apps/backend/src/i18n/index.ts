@@ -18,6 +18,9 @@ export default interface Language {
     category: {
       notFound: ResponseError;
     };
+    tax: {
+      notFound: ResponseError;
+    };
   };
 }
 

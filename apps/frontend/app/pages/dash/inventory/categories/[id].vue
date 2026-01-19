@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/card';
 import { toast } from 'vue-sonner';
 import type { FormType } from '~/components/resourceForms/CategoryForm.vue';
+import type { ErrorResponseSchema } from '@backend/model';
+import type { CategoryPlain } from '@database';
 
 definePageMeta({
   middleware: ['auth'],
@@ -18,12 +20,13 @@ definePageMeta({
 const values = ref<FormType>({
   name: '',
 });
+const id = useRoute().params.id;
 
 function onSubmit(values: FormType) {
   toast.promise<string>(
     new Promise((resolve, reject) =>
-      useApi('/v1/inventory/categories/create', {
-        method: 'POST',
+      useApi(`/v1/inventory/categories/update/${id}`, {
+        method: 'PATCH',
         body: {
           name: values.name,
         },
@@ -41,19 +44,38 @@ function onSubmit(values: FormType) {
           }
         },
         async onResponse(context) {
-          if (context.response.status !== 201) return;
-          resolve('Kategori Oluşturuldu!');
+          if (context.response.status !== 200) return;
+          resolve('Kategori Düzenlendi!');
           useRouter().push('/dash/inventory/categories');
         },
       })
     ),
     {
-      loading: 'Kategori Oluşturuluyor...',
+      loading: 'Kategori Düzenleniyor...',
       success: (data: string) => data,
       error: (data: string) => data,
     }
   );
 }
+
+onMounted(async () => {
+  const fetchedValues = await useApi<typeof CategoryPlain.static>(
+    `/v1/inventory/categories/get/${id}`,
+    {
+      onResponseError(context) {
+        if (context.response.status >= 400) {
+          const body = context.response
+            ._data as typeof ErrorResponseSchema.static;
+          toast(body.error, { description: body.reason });
+        }
+      },
+    }
+  );
+
+  values.value = {
+    name: fetchedValues.data.value?.name,
+  };
+});
 
 const namePreview = computed(
   () => values.value.name?.trim() || 'Yeni Kategori'
@@ -64,8 +86,7 @@ const namePreview = computed(
   <div>
     <FormScaffold
       section="Envanter"
-      title="Kategori Oluştur"
-      description="Ürünleri gruplamak adına yeni bir kategori oluşturun."
+      title="Kategori Düzenle"
       back-to="/dash/inventory/categories"
     >
       <template #main>
