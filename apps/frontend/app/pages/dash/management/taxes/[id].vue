@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import formatPrice from '@/lib/formatPrice';
-import { toast } from 'vue-sonner';
 import type { FormType } from '~/components/resourceForms/TaxForm.vue';
 import type { TaxPlain } from '@database';
 import type { ErrorResponseSchema } from '@backend/model';
@@ -29,55 +28,32 @@ const id = useRoute().params.id;
 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
 
 function onSubmit(values: FormType) {
-  toast.promise<string>(
-    new Promise((resolve, reject) =>
-      useApi(`/v1/management/taxes/update/${id}`, {
-        method: 'PATCH',
-        body: {
-          name: values.name,
-          priority: values.priority,
-          rate: values.rate + '',
-          isFixed: values.isFixed,
-          isCumulative: values.isCumulative,
-        },
-        async onResponseError(context) {
-          if (context.response.status >= 400) {
-            const body = (await context.response._data) as {
-              error: string;
-              reason: string;
-            };
-            reject(body.error);
-            if (context.response.status === 401) {
-              useRouter().push('/login');
-            }
-            return;
-          }
-        },
-        async onResponse(context) {
-          if (context.response.status !== 200) return;
-          resolve('Vergi Düzenlendi!');
-          useRouter().push('/dash/management/taxes');
-        },
-      })
-    ),
-    {
+  useToastFetch(`/v1/management/taxes/update/${id}`, {
+    fetchOptions: {
+      method: 'PATCH',
+      body: {
+        name: values.name,
+        priority: values.priority,
+        rate: values.rate + '',
+        isFixed: values.isFixed,
+        isCumulative: values.isCumulative,
+      },
+    },
+    toastOptions: {
+      success: 'Vergi Düzenlendi!',
       loading: 'Vergi Düzenleniyor...',
-      success: (data: string) => data,
-      error: (data: string) => data,
-    }
-  );
+    },
+  });
 }
 
 onMounted(async () => {
   const fetchedValues = await useApi<typeof TaxPlain.static>(
     `/v1/management/taxes/get/${id}`,
     {
-      onResponseError(context) {
-        if (context.response.status >= 400) {
-          const body = context.response
-            ._data as typeof ErrorResponseSchema.static;
-          toast(body.error, { description: body.reason });
-        }
+      onResponseError({ response }) {
+        if (response.ok) return;
+        const body = response._data as typeof ErrorResponseSchema.static;
+        useToast(body.error, { description: body.reason, type: 'error' });
       },
     }
   );
@@ -106,11 +82,7 @@ const formattedRate = computed(() => {
 
 <template>
   <div>
-    <FormScaffold
-      section="Yönetim"
-      title="Vergi Düzenle"
-      back-to="/dash/management/taxes"
-    >
+    <FormScaffold title="Vergi Düzenle" back-to="/dash/management/taxes">
       <template #main>
         <Card>
           <CardHeader>

@@ -8,9 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { toast } from 'vue-sonner';
 import formatPrice from '~/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/ProductForm.vue';
+import type { ErrorResponseSchema } from '@backend/model';
 
 definePageMeta({
   middleware: ['auth'],
@@ -27,56 +27,29 @@ const values = ref<FormType>({
 const categoryList = await useApi<CategoryOption>(
   '/v1/inventory/categories/get/raw',
   {
-    async onResponseError(context) {
-      if (!context.response) return;
-      if (context.response.status >= 400 || context.response.status < 500) {
-        const body = (await context.response.json()) as {
-          error: string;
-          reason: string;
-        };
-
-        toast(body.error, { description: body.reason });
-      }
+    async onResponseError({ response }) {
+      if (response.ok) return;
+      const body = response._data as typeof ErrorResponseSchema.static;
+      useToast(body.error, { type: 'error' });
     },
   }
 );
 
 function onSubmit(values: FormType) {
-  toast.promise<string>(
-    new Promise((resolve, reject) =>
-      useApi('/v1/inventory/products/create', {
-        method: 'POST',
-        body: {
-          name: values.name,
-          price: '' + values.price,
-          categoryId: values.categoryId,
-        },
-        async onResponseError(context) {
-          if (context.response.status >= 400) {
-            const body = (await context.response._data) as {
-              error: string;
-              reason: string;
-            };
-            reject(body.error);
-            if (context.response.status === 401) {
-              useRouter().push('/login');
-            }
-            return;
-          }
-        },
-        async onResponse(context) {
-          if (context.response.status !== 201) return;
-          resolve('Ürün Oluşturuldu!');
-          useRouter().push('/dash/inventory/products');
-        },
-      })
-    ),
-    {
+  useToastFetch('/v1/inventory/products/create', {
+    fetchOptions: {
+      method: 'POST',
+      body: {
+        name: values.name,
+        price: '' + values.price,
+        categoryId: values.categoryId,
+      },
+    },
+    toastOptions: {
+      success: 'Ürün Oluşturuldu!',
       loading: 'Ürün Oluşturuluyor...',
-      success: (data: string) => data,
-      error: (data: string) => data,
-    }
-  );
+    },
+  });
 }
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Ürün');
@@ -90,8 +63,7 @@ const categoryName = computed(
 <template>
   <div>
     <FormScaffold
-      section="Envanter"
-      title="Ürün Oluştur"
+      title="Yeni Ürün"
       description="Bir kategori altında yeni bir ürün oluşturun."
       back-to="/dash/inventory/products"
     >

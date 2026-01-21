@@ -13,7 +13,6 @@ import {
 import formatPrice from '@/lib/formatPrice';
 import * as z from 'zod';
 import { Field } from '~/components/ui/field';
-import { toast } from 'vue-sonner';
 
 type ProductOption = { name: string; id: string; price: string };
 
@@ -55,7 +54,7 @@ onMounted(async () => {
             reason: string;
           };
 
-          toast(body.error, { description: body.reason });
+          useToast(body.error, { description: body.reason, type: 'error' });
         }
       },
     }

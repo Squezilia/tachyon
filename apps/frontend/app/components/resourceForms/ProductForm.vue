@@ -11,7 +11,6 @@ import {
   NumberFieldDecrement,
   NumberFieldIncrement,
 } from '~/components/ui/number-field';
-import { toast } from 'vue-sonner';
 
 const formSchema = z.object({
   name: z
@@ -43,7 +42,7 @@ const categoryList = (await useNuxtApp()
     credentials: 'include',
   })
   .catch((err: { error: string; reason: string }) => {
-    toast(err.error, { description: err.reason });
+    useToast(err.error, { description: err.reason, type: 'error' });
   })) as { name: string; id: string }[];
 </script>
 

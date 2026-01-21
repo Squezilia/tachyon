@@ -3,7 +3,6 @@ import { authClient } from '@/lib/auth';
 import { toTypedSchema } from '@vee-validate/zod';
 import { ArrowRight } from 'lucide-vue-next';
 import { useForm, Field as VeeField } from 'vee-validate';
-import { toast } from 'vue-sonner';
 import * as z from 'zod';
 import { FieldError } from '~/components/ui/field';
 
@@ -42,12 +41,13 @@ const onSubmit = handleSubmit((values) => {
     callbackURL: '/',
     fetchOptions: {
       onError(context) {
-        toast(context.error.name, {
+        useToast(context.error.name, {
           description: context.error.message,
+          type: 'error',
         });
       },
       onSuccess() {
-        toast('Giriş Yapıldı');
+        useToast('Giriş Yapıldı', { type: 'success' });
       },
     },
   });

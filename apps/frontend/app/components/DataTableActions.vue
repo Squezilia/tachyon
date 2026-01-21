@@ -27,9 +27,9 @@ const props = withDefaults(
     requireDescription?: string;
   }>(),
   {
-    requireTitle: 'Are you absolutely sure?',
+    requireTitle: 'Gerçekten emin misiniz?',
     requireDescription:
-      'This action cannot be undone. This will permanently delete this record from our servers.',
+      'Bu işlem geri alınamaz! Bu işlem sonucunda bu kaynak sistemlerimizden tamamen silinecektir.',
   }
 );
 

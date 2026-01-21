@@ -9,8 +9,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import formatPrice from '@/lib/formatPrice';
-import { toast } from 'vue-sonner';
 import type { FormType } from '~/components/resourceForms/StockForm.vue';
+import type { ErrorResponseSchema } from '@backend/model';
 
 definePageMeta({
   middleware: ['auth'],
@@ -27,58 +27,31 @@ const values = ref<FormType>({
 const products = await useApi<ProductOption[]>(
   '/v1/inventory/products/get/raw',
   {
-    async onResponseError(context) {
-      if (!context.response) return;
-      if (context.response.status >= 400 || context.response.status < 500) {
-        const body = (await context.response.json()) as {
-          error: string;
-          reason: string;
-        };
-
-        toast(body.error, { description: body.reason });
-      }
+    async onResponseError({ response }) {
+      if (response.ok) return;
+      const body = response._data as typeof ErrorResponseSchema.static;
+      useToast(body.error, { description: body.reason, type: 'error' });
     },
   }
 );
 
 function onSubmit(values: FormType) {
-  toast.promise<string>(
-    new Promise((resolve, reject) =>
-      useNuxtApp().$api('/v1/inventory/stocks/create', {
-        method: 'POST',
-        body: {
-          quantity: values.quantity,
-          minQuantity: values.minQuantity,
-          maxQuantity: values.maxQuantity,
-          lastRestockedAt: values.lastRestockedAt,
-          productId: values.productId,
-        },
-        async onResponseError(context) {
-          if (context.response.status >= 400) {
-            const body = (await context.response._data) as {
-              error: string;
-              reason: string;
-            };
-            reject(body.error);
-            if (context.response.status === 401) {
-              useRouter().push('/login');
-            }
-            return;
-          }
-        },
-        async onResponse(context) {
-          if (context.response.status !== 201) return;
-          resolve('Stok Oluşturuldu!');
-          useRouter().push('/dash/inventory/stocks');
-        },
-      })
-    ),
-    {
+  useToastFetch('/v1/inventory/stocks/create', {
+    fetchOptions: {
+      method: 'POST',
+      body: {
+        quantity: values.quantity,
+        minQuantity: values.minQuantity,
+        maxQuantity: values.maxQuantity,
+        lastRestockedAt: values.lastRestockedAt,
+        productId: values.productId,
+      },
+    },
+    toastOptions: {
+      success: 'Stok Oluşturuldu!',
       loading: 'Stok Oluşturuluyor...',
-      success: (data: string) => data,
-      error: (data: string) => data,
-    }
-  );
+    },
+  });
 }
 
 const selectedProduct = computed(() =>
@@ -89,8 +62,7 @@ const selectedProduct = computed(() =>
 <template>
   <div>
     <FormScaffold
-      section="Envanter"
-      title="Stok Oluştur"
+      title="Yeni Stok"
       description="Belirli bir ürün için konum ve miktar belirtin."
       back-to="/dash/inventory/stocks"
     >

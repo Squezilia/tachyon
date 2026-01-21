@@ -8,14 +8,16 @@ import { ArrowRight, Copy, Edit3, Eye, Trash2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import type { TaxPlain } from 'database';
 
+const updateState = ref(0);
+
 const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
   {
-    header: 'Name',
+    header: 'Ad',
     accessorKey: 'name',
   },
   {
     accessorKey: 'priority',
-    header: 'Priority',
+    header: 'Sıra',
     cell: (a) => {
       return h(
         Button,
@@ -31,7 +33,7 @@ const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
     },
   },
   {
-    header: 'Cumulative',
+    header: 'Kümulatif',
     accessorFn: (a) => {
       return a.isCumulative + '';
     },
@@ -51,7 +53,7 @@ const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
     },
   },
   {
-    header: 'Rate',
+    header: 'Değer',
     accessorFn: (a) => {
       return a.isFixed
         ? new Intl.NumberFormat(navigator.language, {
@@ -63,7 +65,7 @@ const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
   },
   {
     accessorKey: 'id',
-    header: 'Actions',
+    header: 'Eylemler',
     cell: (a) =>
       h(DataTableActions, {
         actions: [
@@ -74,12 +76,6 @@ const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
             icon: Eye,
           },
           {
-            title: 'Kopyala',
-            action: () => {},
-            group: 'default',
-            icon: Copy,
-          },
-          {
             title: 'Düzenle',
             action: () => {
               useRouter().push(`/dash/management/taxes/${a.renderValue()}`);
@@ -87,10 +83,35 @@ const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
             group: 'default',
             icon: Edit3,
           },
-
+          {
+            title: 'Kopyala',
+            action: () =>
+              useToastFetch(`/v1/management/taxes/dupe/${a.renderValue()}`, {
+                fetchOptions: {
+                  method: 'POST',
+                },
+                toastOptions: {
+                  loading: 'Vergi Kopyalanıyor...',
+                  success: 'Vergi Kopyalandı!',
+                  onResult: () => updateState.value++,
+                },
+              }),
+            group: 'default',
+            icon: Copy,
+          },
           {
             title: 'Sil',
-            action: () => {},
+            action: () =>
+              useToastFetch(`/v1/management/taxes/delete/${a.renderValue()}`, {
+                fetchOptions: {
+                  method: 'DELETE',
+                },
+                toastOptions: {
+                  loading: 'Vergi Siliniyor...',
+                  success: 'Vergi Silindi!',
+                  onResult: () => updateState.value++,
+                },
+              }),
             group: 'danger',
             icon: Trash2,
             type: 'destructive',
@@ -118,11 +139,15 @@ async function fetchTaxes(params: { page: number; max: number }) {
 
       <NuxtLink to="/dash/management/taxes/create">
         <Button size="sm" variant="secondary">
-          Create Tax
+          Yeni Vergi
           <ArrowRight />
         </Button>
       </NuxtLink>
     </div>
-    <ServerDataTable :columns="columns" :fetch-page="fetchTaxes" />
+    <ServerDataTable
+      :columns="columns"
+      :fetch-page="fetchTaxes"
+      :update-state="updateState"
+    />
   </div>
 </template>

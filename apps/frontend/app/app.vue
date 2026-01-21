@@ -7,7 +7,7 @@ useColorMode().value = 'auto';
 </script>
 
 <template>
-  <Toaster />
+  <Toaster position="bottom-center" />
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>

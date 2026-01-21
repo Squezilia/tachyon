@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { toast } from 'vue-sonner';
 import type { FormType } from '~/components/resourceForms/CategoryForm.vue';
 
 definePageMeta({
@@ -20,39 +19,18 @@ const values = ref<FormType>({
 });
 
 function onSubmit(values: FormType) {
-  toast.promise<string>(
-    new Promise((resolve, reject) =>
-      useApi('/v1/inventory/categories/create', {
-        method: 'POST',
-        body: {
-          name: values.name,
-        },
-        async onResponseError(context) {
-          if (context.response.status >= 400) {
-            const body = (await context.response._data) as {
-              error: string;
-              reason: string;
-            };
-            reject(body.error);
-            if (context.response.status === 401) {
-              useRouter().push('/login');
-            }
-            return;
-          }
-        },
-        async onResponse(context) {
-          if (context.response.status !== 201) return;
-          resolve('Kategori Oluşturuldu!');
-          useRouter().push('/dash/inventory/categories');
-        },
-      })
-    ),
-    {
+  useToastFetch('/v1/inventory/categories/create', {
+    fetchOptions: {
+      method: 'POST',
+      body: {
+        name: values.name,
+      },
+    },
+    toastOptions: {
+      success: 'Kategori Oluşturuldu!',
       loading: 'Kategori Oluşturuluyor...',
-      success: (data: string) => data,
-      error: (data: string) => data,
-    }
-  );
+    },
+  });
 }
 
 const namePreview = computed(
@@ -63,8 +41,7 @@ const namePreview = computed(
 <template>
   <div>
     <FormScaffold
-      section="Envanter"
-      title="Kategori Oluştur"
+      title="Yeni Kategori"
       description="Ürünleri gruplamak adına yeni bir kategori oluşturun."
       back-to="/dash/inventory/categories"
     >

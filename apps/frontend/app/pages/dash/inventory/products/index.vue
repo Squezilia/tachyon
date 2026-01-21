@@ -16,6 +16,8 @@ import DataTableActions from '~/components/DataTableActions.vue';
 import type { ProductListItem } from '@backend/routes/v1/inventory/products/index.model';
 import toLocaleDate from '~/lib/toLocaleDate';
 
+const updateState = ref(0);
+
 const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
   {
     accessorKey: 'name',
@@ -82,13 +84,37 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
           },
           {
             title: 'Kopyala',
-            action: () => {},
+            action: () =>
+              useToastFetch(`/v1/inventory/products/dupe/${a.renderValue()}`, {
+                fetchOptions: {
+                  method: 'POST',
+                },
+                toastOptions: {
+                  loading: 'Ürün Kopyalanıyor...',
+                  success: 'Ürün Kopyalandı!',
+                  onResult: () => updateState.value++,
+                },
+              }),
             group: 'default',
             icon: Copy,
           },
           {
             title: 'Sil',
-            action: () => {},
+            action: () => {
+              useToastFetch(
+                `/v1/inventory/products/delete/${a.renderValue()}`,
+                {
+                  fetchOptions: {
+                    method: 'DELETE',
+                  },
+                  toastOptions: {
+                    loading: 'Ürün Siliniyor...',
+                    success: 'Ürün Silindi!',
+                    onResult: () => updateState.value++,
+                  },
+                }
+              );
+            },
             group: 'danger',
             icon: Trash2,
             type: 'destructive',
@@ -118,12 +144,16 @@ async function fetchProducts(params: { page: number; max: number }) {
 
       <NuxtLink to="/dash/inventory/products/create">
         <Button size="sm" variant="secondary">
-          Ürün Oluştur
+          Yeni Ürün
           <ArrowRight />
         </Button>
       </NuxtLink>
     </div>
 
-    <ServerDataTable :columns="columns" :fetch-page="fetchProducts" />
+    <ServerDataTable
+      :columns="columns"
+      :fetch-page="fetchProducts"
+      :update-state="updateState"
+    />
   </div>
 </template>

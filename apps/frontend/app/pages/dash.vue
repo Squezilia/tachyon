@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { watch } from 'vue';
-import { toast } from 'vue-sonner';
 import { authClient } from '@/lib/auth';
 
 definePageMeta({
@@ -29,8 +28,9 @@ watch(
           organizationSlug: first.slug,
         });
       } catch {
-        toast('Failed to select organization', {
+        useToast('Failed to select organization', {
           description: 'Please choose an organization from the menu.',
+          type: 'error',
         });
       }
     }

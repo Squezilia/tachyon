@@ -3,7 +3,6 @@ import { ArrowLeft } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 
 const props = defineProps<{
-  section: string;
   title: string;
   description?: string;
   backTo?: string;
@@ -21,9 +20,6 @@ const handleBack = () => {
   <div>
     <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div class="space-y-1.5">
-        <p class="text-xs uppercase tracking-wide text-muted-foreground">
-          {{ section }}
-        </p>
         <h1 class="text-3xl font-semibold">{{ title }}</h1>
         <p v-if="description" class="text-sm text-muted-foreground">
           {{ description }}
@@ -31,7 +27,7 @@ const handleBack = () => {
       </div>
       <Button variant="ghost" size="sm" class="gap-2" @click="handleBack">
         <ArrowLeft class="size-4" />
-        Back
+        Geri
       </Button>
     </div>
 

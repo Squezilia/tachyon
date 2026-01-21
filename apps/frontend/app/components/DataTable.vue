@@ -41,6 +41,7 @@ const props = defineProps<{
   }>;
   pageSizeOptions?: number[];
   initialPageSize?: number;
+  updateState?: number;
 }>();
 
 const pageSizeOptions = computed(() => props.pageSizeOptions ?? [10, 20, 50]);
@@ -81,7 +82,10 @@ async function loadServerPage() {
 }
 
 watch(
-  () => [pagination.value.pageIndex, pagination.value.pageSize],
+  [
+    () => [pagination.value.pageIndex, pagination.value.pageSize],
+    () => props.updateState,
+  ],
   async () => {
     await loadServerPage();
   },

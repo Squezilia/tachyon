@@ -19,6 +19,7 @@ import {
 } from 'lib/error';
 import prisma from 'lib/prisma';
 import { ProductListItem } from './index.model';
+import { v7 } from 'uuid';
 
 export default () =>
   new Elysia({ prefix: '/products' })
@@ -90,6 +91,69 @@ export default () =>
             categoryId: t.String(),
           }),
         ]),
+        response: {
+          ...ResponseSchemaSet,
+          201: ProductPlain,
+          403: ErrorResponseSchema,
+        },
+      }
+    )
+    .post(
+      '/dupe/:id',
+      async ({ request: { headers }, status, session, params: { id } }) => {
+        if (!session.activeOrganizationId)
+          return status(400, tr.error.organization.noActive);
+
+        if (
+          !(await auth.api.hasPermission({
+            headers,
+            body: { permissions: { product: ['create', 'update'] } },
+          }))
+        )
+          return status(403, tr.error.organization.insufficentPermission);
+
+        const product = await prisma.product
+          .findFirst({
+            where: {
+              id,
+              organizationId: session.activeOrganizationId,
+            },
+            include: {
+              appliedTaxes: true,
+            },
+          })
+          .catch(mapPrismaError);
+
+        if (product instanceof MappedPrismaError)
+          return status(product.status, product.response);
+
+        if (!product) return status(404, tr.error.product.notFound);
+
+        const createdProduct = await prisma.product
+          .create({
+            data: {
+              ...product,
+              name: `${product.name} - Kopyalandı`,
+              appliedTaxes: {
+                connect: product.appliedTaxes.map((tax) => ({
+                  id: tax.id,
+                })),
+              },
+              id: v7(),
+            },
+          })
+          .catch(mapPrismaError);
+
+        if (createdProduct instanceof MappedPrismaError)
+          return status(createdProduct.status, createdProduct.response);
+
+        return status(201, {
+          ...createdProduct,
+          price: createdProduct.price.toString(),
+        });
+      },
+      {
+        auth: true,
         response: {
           ...ResponseSchemaSet,
           201: ProductPlain,

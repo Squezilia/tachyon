@@ -77,7 +77,7 @@ async function fetchStocks(params: { page: number; max: number }) {
 
       <NuxtLink to="/dash/inventory/stocks/create">
         <Button size="sm" variant="secondary">
-          Stok Oluştur
+          Yeni Stok
           <ArrowRight />
         </Button>
       </NuxtLink>

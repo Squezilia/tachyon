@@ -16,6 +16,8 @@ import type { CategoryPlain } from 'database';
 import toLocaleDate from '~/lib/toLocaleDate';
 import DataTableActions from '~/components/DataTableActions.vue';
 
+const updateState = ref(0);
+
 const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
   {
     accessorKey: 'name',
@@ -36,7 +38,7 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
   },
   {
     header: 'Eylemler',
-    accessorKey: 'id',
+    accessorFn: (a) => a.id,
     cell: (a) =>
       h(DataTableActions, {
         actions: [
@@ -56,13 +58,40 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
           },
           {
             title: 'Kopyala',
-            action: () => {},
+            action: () => {
+              useToastFetch(
+                `/v1/inventory/categories/dupe/${a.renderValue()}`,
+                {
+                  fetchOptions: {
+                    method: 'POST',
+                  },
+                  toastOptions: {
+                    loading: 'Kategori Kopyalanıyor...',
+                    success: 'Kategori Kopyalandı!',
+                    onResult: () => updateState.value++,
+                  },
+                }
+              );
+            },
             group: 'default',
             icon: Copy,
           },
           {
             title: 'Sil',
-            action: () => {},
+            action: () =>
+              useToastFetch(
+                `/v1/inventory/categories/delete/${a.renderValue()}`,
+                {
+                  fetchOptions: {
+                    method: 'DELETE',
+                  },
+                  toastOptions: {
+                    loading: 'Kategori Siliniyor...',
+                    success: 'Kategori Silindi!',
+                    onResult: () => updateState.value++,
+                  },
+                }
+              ),
             group: 'danger',
             icon: Trash2,
             type: 'destructive',
@@ -92,12 +121,16 @@ async function fetchCategories(params: { page: number; max: number }) {
 
       <NuxtLink to="/dash/inventory/categories/create">
         <Button size="sm" variant="secondary">
-          Kategori Oluştur
+          Yeni Kategori
           <ArrowRight />
         </Button>
       </NuxtLink>
     </div>
 
-    <ServerDataTable :columns="columns" :fetch-page="fetchCategories" />
+    <ServerDataTable
+      :columns="columns"
+      :fetch-page="fetchCategories"
+      :update-state="updateState"
+    />
   </div>
 </template>

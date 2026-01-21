@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 import { ArrowRight, Loader2 } from 'lucide-vue-next';
-import { toast } from 'vue-sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -108,20 +107,23 @@ async function handleCreateOrganization() {
     const result = await authClient.organization.create(payload);
 
     if (result.error) {
-      toast('Unable to create organization', {
+      useToast('Unable to create organization', {
         description: result.error.message ?? 'Please try again later.',
+        type: 'error',
       });
       return;
     }
 
-    toast('Organization created', {
+    useToast('Organization created', {
       description: `${payload.name} is ready to go.`,
+      type: 'success',
     });
 
     await router.push('/dash');
   } catch {
-    toast('Something went wrong', {
+    useToast('Something went wrong', {
       description: 'Please try again in a moment.',
+      type: 'error',
     });
   } finally {
     isCreating.value = false;

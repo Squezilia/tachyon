@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import formatPrice from '@/lib/formatPrice';
-import { toast } from 'vue-sonner';
 import type { FormType } from '~/components/resourceForms/TaxForm.vue';
 
 definePageMeta({
@@ -26,43 +25,22 @@ const values = ref<FormType>({
 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
 
 function onSubmit(values: FormType) {
-  toast.promise<string>(
-    new Promise((resolve, reject) =>
-      useApi(`/v1/management/taxes/create`, {
-        method: 'POST',
-        body: {
-          name: values.name,
-          priority: values.priority,
-          rate: values.rate + '',
-          isFixed: values.isFixed,
-          isCumulative: values.isCumulative,
-        },
-        async onResponseError(context) {
-          if (context.response.status >= 400) {
-            const body = (await context.response._data) as {
-              error: string;
-              reason: string;
-            };
-            reject(body.error);
-            if (context.response.status === 401) {
-              useRouter().push('/login');
-            }
-            return;
-          }
-        },
-        async onResponse(context) {
-          if (context.response.status !== 201) return;
-          resolve('Vergi Oluşturuldu!');
-          useRouter().push('/dash/management/taxes');
-        },
-      })
-    ),
-    {
+  useToastFetch(`/v1/management/taxes/create`, {
+    fetchOptions: {
+      method: 'POST',
+      body: {
+        name: values.name,
+        priority: values.priority,
+        rate: values.rate + '',
+        isFixed: values.isFixed,
+        isCumulative: values.isCumulative,
+      },
+    },
+    toastOptions: {
+      success: 'Vergi Oluşturuldu!',
       loading: 'Vergi Oluşturuluyor...',
-      success: (data: string) => data,
-      error: (data: string) => data,
-    }
-  );
+    },
+  });
 }
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Vergi');
@@ -79,8 +57,7 @@ const formattedRate = computed(() => {
 <template>
   <div>
     <FormScaffold
-      section="Yönetim"
-      title="Vergi Oluştur"
+      title="Yeni Vergi"
       description="Matrah tipi, vergi stili, vergi adı ve değeri gibi verileri ayarlayarak vergi oluşturun."
       back-to="/dash/management/taxes"
     >

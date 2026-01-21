@@ -6,7 +6,7 @@ export default function useApi<T>(
 ) {
   return useFetch(url, {
     ...options,
-    $fetch: useNuxtApp().$api as typeof $fetch,
+    $fetch: useNuxtApp().$api,
     credentials: 'include',
     responseType: 'json',
   });

@@ -8,7 +8,6 @@ import {
 } from '~/components/ui/carousel';
 import { useForm, Field as VeeField } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
-import { toast } from 'vue-sonner';
 import { ArrowLeft } from 'lucide-vue-next';
 import { motion } from 'motion-v';
 
@@ -91,12 +90,13 @@ const onSubmit = handleSubmit((values) => {
     callbackURL: '/',
     fetchOptions: {
       onError(context) {
-        toast(context.error.name, {
+        useToast(context.error.name, {
           description: context.error.message,
+          type: 'error',
         });
       },
       onSuccess() {
-        toast('Kayıt Olundu.');
+        useToast('Kayıt Olundu.', { type: 'success' });
       },
     },
   });

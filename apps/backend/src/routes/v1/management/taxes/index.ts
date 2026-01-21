@@ -13,6 +13,7 @@ import {
   ResponseSchemaSet,
 } from 'lib/error';
 import prisma from 'lib/prisma';
+import { v7 } from 'uuid';
 
 export default () =>
   new Elysia({ prefix: '/taxes' })
@@ -65,6 +66,61 @@ export default () =>
           security: [{ CookieAuth: [] }],
         },
         body: t.Intersect([TaxPlainInputCreate]),
+        response: {
+          ...ResponseSchemaSet,
+          201: TaxPlain,
+          403: ErrorResponseSchema,
+        },
+      }
+    )
+    .post(
+      '/dupe/:id',
+      async ({ request: { headers }, status, session, params: { id } }) => {
+        if (!session.activeOrganizationId)
+          return status(400, tr.error.organization.noActive);
+
+        if (
+          !(await auth.api.hasPermission({
+            headers,
+            body: { permissions: { tax: ['create', 'update'] } },
+          }))
+        )
+          return status(403, tr.error.organization.insufficentPermission);
+
+        const tax = await prisma.tax
+          .findFirst({
+            where: {
+              id,
+              organizationId: session.activeOrganizationId,
+            },
+          })
+          .catch(mapPrismaError);
+
+        if (tax instanceof MappedPrismaError)
+          return status(tax.status, tax.response);
+
+        if (!tax) return status(404, tr.error.tax.notFound);
+
+        const createdTax = await prisma.tax
+          .create({
+            data: {
+              ...tax,
+              name: `${tax.name} - Kopyalandı`,
+              id: v7(),
+            },
+          })
+          .catch(mapPrismaError);
+
+        if (createdTax instanceof MappedPrismaError)
+          return status(createdTax.status, createdTax.response);
+
+        return status(201, {
+          ...createdTax,
+          rate: createdTax.rate.toString(),
+        });
+      },
+      {
+        auth: true,
         response: {
           ...ResponseSchemaSet,
           201: TaxPlain,

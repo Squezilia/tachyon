@@ -17,6 +17,7 @@ import {
   ResponseSchemaSet,
 } from 'lib/error';
 import prisma from 'lib/prisma';
+import { v7 } from 'uuid';
 
 export default () =>
   new Elysia({ prefix: '/categories' })
@@ -66,6 +67,64 @@ export default () =>
         },
       }
     )
+    .post(
+      '/dupe/:id',
+      async ({ request: { headers }, status, session, params: { id } }) => {
+        if (!session.activeOrganizationId)
+          return status(400, tr.error.organization.noActive);
+
+        if (
+          !(await auth.api.hasPermission({
+            headers,
+            body: { permissions: { category: ['view'] } },
+          }))
+        )
+          return status(403, tr.error.organization.insufficentPermission);
+
+        const category = await prisma.category
+          .findFirst({
+            where: {
+              id,
+              organizationId: session.activeOrganizationId,
+            },
+            include: {
+              appliedTaxes: true,
+            },
+          })
+          .catch(mapPrismaError);
+
+        if (category instanceof MappedPrismaError)
+          return status(category.status, category.response);
+
+        if (!category) return status(404, tr.error.category.notFound);
+
+        const createdCategory = await prisma.category
+          .create({
+            data: {
+              ...category,
+              name: `${category.name} - Kopyalandı`,
+              appliedTaxes: {
+                connect: category.appliedTaxes.map((tax) => ({ id: tax.id })),
+              },
+              id: v7(),
+            },
+          })
+          .catch(mapPrismaError);
+
+        if (createdCategory instanceof MappedPrismaError)
+          return status(createdCategory.status, createdCategory.response);
+
+        return status(201, createdCategory);
+      },
+      {
+        auth: true,
+        response: {
+          ...ResponseSchemaSet,
+          201: CategoryPlain,
+          403: ErrorResponseSchema,
+        },
+      }
+    )
     .get(
       '/get',
       async ({ request: { headers }, status, session, query }) => {
@@ -75,7 +134,7 @@ export default () =>
         if (
           !(await auth.api.hasPermission({
             headers,
-            body: { permissions: { category: ['view'] } },
+            body: { permissions: { category: ['create', 'update'] } },
           }))
         )
           return status(403, tr.error.organization.insufficentPermission);
