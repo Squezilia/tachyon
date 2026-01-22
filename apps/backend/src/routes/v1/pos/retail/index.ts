@@ -11,6 +11,7 @@ import {
 } from 'lib/error';
 import prisma from 'lib/prisma';
 import { v7 } from 'uuid';
+import sells from './sells';
 
 export default () =>
   new Elysia({ prefix: '/retail' })
@@ -277,4 +278,5 @@ export default () =>
           security: [{ CookieAuth: [] }],
         },
       }
-    );
+    )
+    .use(sells);

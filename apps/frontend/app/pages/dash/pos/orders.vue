@@ -7,17 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Eye, Undo2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
-import type { SellPlain } from 'database';
+import type { OrderPlain } from 'database';
 
-const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
+const columns: ColumnDef<
+  typeof OrderPlain.static & { issuer: { name: string } },
+  unknown
+>[] = [
   {
-    header: 'Created At',
+    header: 'Oluşturuldu',
     accessorFn: (a) => {
       return toLocaleDate(a.createdAt);
     },
   },
   {
-    header: 'Payment',
+    header: 'Ödeme',
     accessorFn: () => {
       return 'Payment';
     },
@@ -29,30 +32,54 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
       ),
   },
   {
-    header: 'Refunded',
+    header: 'Güncellendi',
     accessorFn: (a) => {
-      return a.isReversal + '';
+      return toLocaleDate(a.updatedAt);
+    },
+  },
+  {
+    header: 'Durum',
+    accessorFn: (a) => {
+      return a.status;
     },
     cell: (a) => {
       return h(
         Button,
         {
           size: 'sm',
-          variant: a.renderValue() === 'true' ? 'destructive' : 'outline',
+          variant: a.renderValue() === 'OPEN' ? 'outline' : 'destructive',
           class: 'text-xs px-2 h-6',
         },
         {
-          default: () =>
-            a.renderValue() === 'true' ? 'Refunded' : 'Not Refunded',
+          default: () => (a.renderValue() === 'OPEN' ? 'Açık' : 'Kapalı'),
+        }
+      );
+    },
+  },
+  {
+    header: 'Gerçekleştiren',
+    accessorFn: (a) => {
+      return a.issuer.name;
+    },
+    cell: (a) => {
+      return h(
+        Button,
+        {
+          size: 'sm',
+          variant: 'outline',
+          class: 'text-xs px-2 h-6',
+        },
+        {
+          default: () => a.renderValue(),
         }
       );
     },
   },
   {
     accessorFn: (a) => {
-      return a.isReversal;
+      return a.tableId;
     },
-    header: 'Reversal Sell',
+    header: 'Masa',
     cell: () =>
       h(
         Button,
@@ -65,18 +92,18 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
       ),
   },
   {
-    header: 'Actions',
+    header: 'Eylemler',
     cell: () =>
       h(DataTableActions, {
         actions: [
           {
-            title: 'Details',
+            title: 'Detaylar',
             action: () => {},
             group: 'default',
             icon: Eye,
           },
           {
-            title: 'Refund',
+            title: 'İade',
             action: () => {},
             group: 'danger',
             icon: Undo2,
@@ -89,11 +116,13 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
 ];
 
 async function fetchSells(params: { page: number; max: number }) {
-  const { data, error } = await client.v1.pos.retail.get.get({
+  const { data, error } = await client.v1.pos.gastro.orders.get.get({
     query: { page: params.page, max: params.max },
   });
   if (error)
-    throw new Error(String(error.value?.reason ?? 'Failed to fetch stocks'));
+    throw new Error(
+      String(error.value?.reason ?? 'Siparişler alınırken sorun yaşandı.')
+    );
   return data;
 }
 </script>

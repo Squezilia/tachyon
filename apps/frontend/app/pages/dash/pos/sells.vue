@@ -11,13 +11,13 @@ import type { SellPlain } from 'database';
 
 const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
   {
-    header: 'Created At',
+    header: 'Oluşturuldu',
     accessorFn: (a) => {
       return toLocaleDate(a.createdAt);
     },
   },
   {
-    header: 'Payment',
+    header: 'Ödeme',
     accessorFn: () => {
       return 'Payment';
     },
@@ -29,7 +29,7 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
       ),
   },
   {
-    header: 'Refunded',
+    header: 'İade',
     accessorFn: (a) => {
       return a.isReversal + '';
     },
@@ -43,7 +43,7 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
         },
         {
           default: () =>
-            a.renderValue() === 'true' ? 'Refunded' : 'Not Refunded',
+            a.renderValue() === 'true' ? 'İade Edilmiş' : 'İade Edilmemiş',
         }
       );
     },
@@ -52,7 +52,7 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
     accessorFn: (a) => {
       return a.isReversal;
     },
-    header: 'Reversal Sell',
+    header: 'İade Satışı',
     cell: () =>
       h(
         Button,
@@ -65,18 +65,18 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
       ),
   },
   {
-    header: 'Actions',
+    header: 'Eylemler',
     cell: () =>
       h(DataTableActions, {
         actions: [
           {
-            title: 'Details',
+            title: 'Detaylar',
             action: () => {},
             group: 'default',
             icon: Eye,
           },
           {
-            title: 'Refund',
+            title: 'İade',
             action: () => {},
             group: 'danger',
             icon: Undo2,
@@ -89,11 +89,13 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
 ];
 
 async function fetchSells(params: { page: number; max: number }) {
-  const { data, error } = await client.v1.pos.retail.get.get({
+  const { data, error } = await client.v1.pos.retail.sells.get.get({
     query: { page: params.page, max: params.max },
   });
   if (error)
-    throw new Error(String(error.value?.reason ?? 'Failed to fetch stocks'));
+    throw new Error(
+      String(error.value?.reason ?? 'Satışlar alınırken sorun yaşandı.')
+    );
   return data;
 }
 </script>

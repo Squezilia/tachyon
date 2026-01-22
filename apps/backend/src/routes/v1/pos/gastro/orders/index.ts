@@ -12,7 +12,7 @@ import {
 } from '@backend/lib/error';
 import prisma from '@backend/lib/prisma';
 import { OrderPlain } from '@database';
-import Elysia from 'elysia';
+import Elysia, { t } from 'elysia';
 
 export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
   '/get',
@@ -34,6 +34,13 @@ export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
         skip: query.max * query.page,
         where: {
           organizationId: session.activeOrganizationId,
+        },
+        include: {
+          issuer: {
+            select: {
+              name: true,
+            },
+          },
         },
       }),
       prisma.order.count({
@@ -69,7 +76,12 @@ export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
     query: PaginationQuery,
     response: {
       ...ResponseSchemaSet,
-      200: ResponsePaginate(OrderPlain),
+      200: ResponsePaginate(
+        t.Composite([
+          OrderPlain,
+          t.Object({ issuer: t.Object({ name: t.String() }) }),
+        ])
+      ),
       403: ErrorResponseSchema,
     },
   }

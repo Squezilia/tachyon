@@ -1267,7 +1267,7 @@ async function seed() {
             quantityChange: config.quantityChange,
             reason: config.reason as any,
             createdAt,
-            createdBy: users[config.userKey].id,
+            createdById: users[config.userKey].id,
             organizationId: organization.id,
           },
         });
