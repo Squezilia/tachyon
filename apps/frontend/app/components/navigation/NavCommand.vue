@@ -4,14 +4,14 @@
     @click="open = true"
   >
     <Search class="size-4" />
-    <span class="hidden md:block">Use Commands..</span>
+    <span class="hidden md:block">Komutları Kullan..</span>
     <KbdGroup class="ml-auto text-xs">
       <Kbd> ⌘ </Kbd>
       <Kbd> P </Kbd>
     </KbdGroup>
   </button>
   <CommandDialog v-model:open="open">
-    <CommandInput placeholder="Use Commands.." />
+    <CommandInput placeholder="Komutları Kullan.." />
     <CommandList>
       <CommandEmpty>No results found.</CommandEmpty>
       <template v-for="[title, list] of Object.entries(commands)" :key="title">
@@ -20,15 +20,18 @@
             v-for="[command, details] of Object.entries(list)"
             :key="command"
             :value="details.id || command.toLowerCase()"
+            @select="
+              () =>
+                details.type == 'route'
+                  ? (() => {
+                      navigateTo(details.route);
+                      open = false;
+                    })()
+                  : details.afterClick
+            "
           >
-            <NuxtLink v-if="details.type == 'route'" :to="details.route">
-              <component :is="details.icon" />
-              {{ command }}
-            </NuxtLink>
-            <template v-else>
-              <component :is="details.icon" />
-              {{ command }}
-            </template>
+            <component :is="details.icon" />
+            <span>{{ command }}</span>
           </CommandItem>
         </CommandGroup>
         <CommandSeparator />
@@ -39,21 +42,22 @@
 
 <script lang="ts" setup>
 import {
-  BadgeCheck,
+  ArrowRightLeft,
+  BadgeDollarSign,
   BadgePercent,
   Box,
   Boxes,
-  ChartBar,
-  Clock4,
-  ClockFading,
-  GalleryVertical,
+  ChartAreaIcon,
+  ChartBarIcon,
   GalleryVerticalEnd,
   Plus,
-  ReceiptText,
   Search,
+  Settings,
+  ShoppingBasket,
+  Users2,
 } from 'lucide-vue-next';
 import type { FunctionalComponent, VNode } from 'vue';
-import type { RouteLocationAsPath } from 'vue-router';
+import type { RouteLocationAsString } from 'vue-router';
 import { useMagicKeys } from '@vueuse/core';
 
 const open = ref(false);
@@ -85,74 +89,94 @@ type ActionCommand = {
 
 type RouteCommand = {
   type: 'route';
-  route: RouteLocationAsPath;
+  route: RouteLocationAsString;
 } & CommandRaw;
 
 type Command = ActionCommand | RouteCommand;
 
 const commands: Record<string, Record<string, Command>> = {
-  Analytics: {
-    'View Weekly Analytics': {
-      type: 'raw',
-      icon: ChartBar,
+  General: {},
+  Analitikler: {
+    'İşlenmiş Analitikler': {
+      icon: ChartAreaIcon,
+      type: 'route',
+      route: '/dash/analytics/aggregated',
     },
-    'View Monthly Analytics': {
-      type: 'raw',
-      icon: ChartBar,
-    },
-    'View All of Time Analytics': {
-      type: 'raw',
-      icon: ChartBar,
-    },
-  },
-  Store: {
-    'View Sells': {
-      type: 'raw',
-      icon: ReceiptText,
-    },
-    'View Orders': {
-      type: 'raw',
-      icon: ReceiptText,
-    },
-    'Check Integrity': {
-      type: 'raw',
-      icon: BadgeCheck,
+    'Saf Analitikler': {
+      icon: ChartBarIcon,
+      type: 'route',
+      route: '/dash/analytics/raw',
     },
   },
-  Inventory: {
-    'List Inventory': {
-      type: 'raw',
-      icon: Boxes,
+  POS: {
+    Satışlar: {
+      icon: ShoppingBasket,
+      type: 'route',
+      route: '/dash/pos/sells',
     },
-    'Create Product': {
-      type: 'raw',
-      icon: Plus,
+    Siparişler: {
+      icon: ShoppingBasket,
+      type: 'route',
+      route: '/dash/pos/orders',
     },
-    'List Products': {
-      type: 'raw',
+  },
+  Envanter: {
+    Ürünler: {
       icon: Box,
+      type: 'route',
+      route: '/dash/inventory/products',
     },
-    'Create Category': {
-      type: 'raw',
-      icon: GalleryVertical,
+    'Yeni Ürün': {
+      icon: Plus,
+      type: 'route',
+      route: '/dash/inventory/products/create',
     },
-    'List Categories': {
-      type: 'raw',
+    Kategoriler: {
+      icon: Boxes,
+      type: 'route',
+      route: '/dash/inventory/categories',
+    },
+    'Yeni Kategori': {
+      icon: Plus,
+      type: 'route',
+      route: '/dash/inventory/categories/create',
+    },
+    Stoklar: {
       icon: GalleryVerticalEnd,
+      type: 'route',
+      route: '/dash/inventory/stocks',
+    },
+    'Yeni Stok': {
+      icon: Plus,
+      type: 'route',
+      route: '/dash/inventory/stocks/create',
+    },
+    Hareketler: {
+      icon: ArrowRightLeft,
+      type: 'route',
+      route: '/dash/inventory/audit',
     },
   },
-  Campaigns: {
-    'List All Campaigns': {
-      type: 'raw',
+  Yönetim: {
+    Genel: {
+      icon: Settings,
+      type: 'route',
+      route: '/dash/management/general',
+    },
+    Vergiler: {
+      icon: BadgeDollarSign,
+      type: 'route',
+      route: '/dash/management/taxes',
+    },
+    Kampanyalar: {
       icon: BadgePercent,
+      type: 'route',
+      route: '/dash/management/campaigns',
     },
-    'List Expired Campaigns': {
-      type: 'raw',
-      icon: ClockFading,
-    },
-    'List Active Campaigns': {
-      type: 'raw',
-      icon: Clock4,
+    Üyeler: {
+      icon: Users2,
+      type: 'route',
+      route: '/dash/management/members',
     },
   },
 };
