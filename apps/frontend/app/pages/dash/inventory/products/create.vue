@@ -27,6 +27,7 @@ const values = ref<FormType>({
 const categoryList = await useApi<CategoryOption>(
   '/v1/inventory/categories/get/raw',
   {
+    cache: 'no-cache',
     async onResponseError({ response }) {
       if (response.ok) return;
       const body = response._data as typeof ErrorResponseSchema.static;
@@ -48,6 +49,7 @@ function onSubmit(values: FormType) {
     toastOptions: {
       success: 'Ürün Oluşturuldu!',
       loading: 'Ürün Oluşturuluyor...',
+      callback: '/dash/inventory/products',
     },
   });
 }

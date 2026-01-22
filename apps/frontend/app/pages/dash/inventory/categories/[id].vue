@@ -16,6 +16,8 @@ definePageMeta({
   middleware: ['auth'],
 });
 
+const { $api } = useNuxtApp();
+
 const values = ref<FormType>({
   name: '',
 });
@@ -32,14 +34,16 @@ function onSubmit(values: FormType) {
     toastOptions: {
       loading: 'Kategori Oluşturuluyor...',
       success: 'Kategori Oluşturuldu!',
+      callback: '/dash/inventory/categories',
     },
   });
 }
 
 onMounted(async () => {
-  const fetchedValues = await useApi<typeof CategoryPlain.static>(
+  const fetchedValues = await $api<typeof CategoryPlain.static>(
     `/v1/inventory/categories/get/${id}`,
     {
+      cache: 'no-cache',
       onResponseError({ response }) {
         if (response.ok) return;
         const body = response._data as typeof ErrorResponseSchema.static;
@@ -49,7 +53,7 @@ onMounted(async () => {
   );
 
   values.value = {
-    name: fetchedValues.data.value?.name,
+    name: fetchedValues?.name,
   };
 });
 

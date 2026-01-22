@@ -13,8 +13,9 @@
       @mouseover="HoverContainerMouseOver"
     >
       <div
+        :data-find="ActiveTargetFind"
         :style="ActiveTargetPosition"
-        class="absolute bottom-0 h-9 w-20 z-0 border-primary border-b-2 transition-all duration-100 delay-150"
+        class="absolute bottom-0 h-9 w-20 z-0 border-primary border-b-2 transition-all duration-100 delay-150 data-[find=false]:top-4"
       />
       <NuxtLink
         v-for="[tabName, path] of Object.entries(tab.routes)"
@@ -33,12 +34,13 @@
 <script setup lang="ts">
 import type { Tab } from './Navigation.vue';
 
-const props = defineProps<{
+defineProps<{
   tab: Tab;
 }>();
 
 const HoverWrapper = ref<HTMLElement | null>(null);
 const ActiveWrapper = ref<HTMLElement | null>(null);
+const ActiveTargetFind = ref(false);
 const HoverTargetPosition = ref({
   left: '0px',
   width: '0px',
@@ -50,11 +52,14 @@ const ActiveTargetPosition = ref({
 
 onMounted(() => setActiveTarget(useRoute().path));
 
-watch(props.tab, () => setActiveTarget(useRoute().path), { flush: 'post' });
+const route = useRoute();
 
-useRouter().afterEach((to) => {
-  setActiveTarget(to.path);
-});
+watchEffect(
+  () => {
+    setActiveTarget(route.path);
+  },
+  { flush: 'post' }
+);
 
 function HoverContainerMouseOver(e: MouseEvent) {
   const target = e.target as HTMLElement;
@@ -73,11 +78,18 @@ async function setActiveTarget(path: string) {
   if (!ActiveWrapper.value) return;
   for (const child of ActiveWrapper.value.children) {
     if (path === child.getAttribute('href')) {
+      ActiveTargetFind.value = true;
       const after = (child as HTMLElement).getBoundingClientRect();
       const container = ActiveWrapper.value.getBoundingClientRect();
       ActiveTargetPosition.value.left = `${after.left + ActiveWrapper.value.scrollLeft - container.x}px`;
       ActiveTargetPosition.value.width = `${after.width}px`;
+      nextTick();
+      return;
     }
   }
+  ActiveTargetPosition.value.left = `0px`;
+  ActiveTargetPosition.value.width = `0px`;
+  ActiveTargetFind.value = false;
+  nextTick();
 }
 </script>

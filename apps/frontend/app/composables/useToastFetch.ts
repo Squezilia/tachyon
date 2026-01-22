@@ -3,6 +3,7 @@ import {
   NitroFetchRequest,
   AvailableRouterMethod,
 } from 'nitropack/types';
+import { RouteLocationAsString } from 'vue-router';
 import { toast } from 'vue-sonner';
 import toastFetchResolver from '~/lib/toastFetchResolver';
 
@@ -19,6 +20,7 @@ export default async function useToastFetch(
       onSuccess?: () => void;
       onError?: () => void;
       onResult?: () => void;
+      callback?: RouteLocationAsString;
     };
   }
 ) {
@@ -30,6 +32,7 @@ export default async function useToastFetch(
           reject,
           resolve,
           success: options.toastOptions.success,
+          callback: options.toastOptions.callback,
         }),
         ...options.fetchOptions,
       })

@@ -17,6 +17,8 @@ definePageMeta({
   middleware: ['auth'],
 });
 
+const { $api } = useNuxtApp();
+
 const values = ref<FormType>({
   name: '',
   categoryId: '',
@@ -38,6 +40,7 @@ function onSubmit(values: FormType) {
     toastOptions: {
       success: 'Ürün Düzenlendi!',
       loading: 'Ürün Düzenleniyor...',
+      callback: '/dash/inventory/products',
     },
   });
 }
@@ -49,20 +52,22 @@ const categoryName = computed(
 );
 
 onMounted(async () => {
-  const fetchedList = await useApi<{ name: string; id: string }[]>(
-    '/v1/inventory/categories/get/raw'
+  const fetchedList = await $api<{ name: string; id: string }[]>(
+    '/v1/inventory/categories/get/raw',
+    { cache: 'no-cache' }
   ).catch((err: typeof ErrorResponseSchema.static) => {
     useToast(err.error, { description: err.reason, type: 'error' });
     return;
   });
 
-  if (!fetchedList || !fetchedList.data.value) return;
+  if (!fetchedList) return;
 
-  categoryList.value = fetchedList.data.value;
+  categoryList.value = fetchedList;
 
-  const fetchedValues = await useApi<typeof ProductPlain.static>(
+  const fetchedValues = await $api<typeof ProductPlain.static>(
     `/v1/inventory/products/get/${id}`,
     {
+      cache: 'no-cache',
       onResponseError({ response }) {
         if (response.ok) return;
         const body = response._data as typeof ErrorResponseSchema.static;
@@ -71,12 +76,12 @@ onMounted(async () => {
     }
   );
 
-  if (!fetchedValues.data.value) return;
+  if (!fetchedValues) return;
 
   values.value = {
-    name: fetchedValues.data.value.name,
-    price: +fetchedValues.data.value.price,
-    categoryId: fetchedValues.data.value.categoryId,
+    name: fetchedValues.name,
+    price: +fetchedValues.price,
+    categoryId: fetchedValues.categoryId,
   };
 });
 </script>

@@ -29,6 +29,7 @@ function onSubmit(values: FormType) {
     toastOptions: {
       success: 'Kategori Oluşturuldu!',
       loading: 'Kategori Oluşturuluyor...',
+      callback: '/dash/inventory/categories',
     },
   });
 }

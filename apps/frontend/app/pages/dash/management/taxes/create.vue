@@ -39,6 +39,7 @@ function onSubmit(values: FormType) {
     toastOptions: {
       success: 'Vergi Oluşturuldu!',
       loading: 'Vergi Oluşturuluyor...',
+      callback: '/dash/management/taxes',
     },
   });
 }

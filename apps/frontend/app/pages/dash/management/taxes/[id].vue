@@ -17,6 +17,8 @@ definePageMeta({
   middleware: ['auth'],
 });
 
+const { $api } = useNuxtApp();
+
 const values = ref<FormType>({
   name: '',
   isCumulative: false,
@@ -42,14 +44,16 @@ function onSubmit(values: FormType) {
     toastOptions: {
       success: 'Vergi Düzenlendi!',
       loading: 'Vergi Düzenleniyor...',
+      callback: '/dash/management/taxes',
     },
   });
 }
 
 onMounted(async () => {
-  const fetchedValues = await useApi<typeof TaxPlain.static>(
+  const fetchedValues = await $api<typeof TaxPlain.static>(
     `/v1/management/taxes/get/${id}`,
     {
+      cache: 'no-cache',
       onResponseError({ response }) {
         if (response.ok) return;
         const body = response._data as typeof ErrorResponseSchema.static;
@@ -58,14 +62,14 @@ onMounted(async () => {
     }
   );
 
-  if (!fetchedValues.data.value) return;
+  if (!fetchedValues) return;
 
   values.value = {
-    name: fetchedValues.data.value.name,
-    rate: +fetchedValues.data.value.rate,
-    priority: fetchedValues.data.value.priority,
-    isFixed: fetchedValues.data.value.isFixed,
-    isCumulative: fetchedValues.data.value.isCumulative,
+    name: fetchedValues.name,
+    rate: +fetchedValues.rate,
+    priority: fetchedValues.priority,
+    isFixed: fetchedValues.isFixed,
+    isCumulative: fetchedValues.isCumulative,
   };
 });
 
