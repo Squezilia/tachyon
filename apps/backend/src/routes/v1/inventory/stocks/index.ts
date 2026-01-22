@@ -112,25 +112,23 @@ export default () =>
         )
           return status(403, tr.error.organization.insufficentPermission);
 
-        const transaction = await prisma
-          .$transaction([
-            prisma.stock.findMany({
-              take: query.max,
-              skip: query.max * query.page,
-              include: {
-                product: true,
-              },
-              where: {
-                organizationId: session.activeOrganizationId,
-              },
-            }),
-            prisma.stock.count({
-              where: {
-                organizationId: session.activeOrganizationId,
-              },
-            }),
-          ])
-          .catch(mapPrismaError);
+        const transaction = await Promise.all([
+          prisma.stock.findMany({
+            take: query.max,
+            skip: query.max * query.page,
+            include: {
+              product: true,
+            },
+            where: {
+              organizationId: session.activeOrganizationId,
+            },
+          }),
+          prisma.stock.count({
+            where: {
+              organizationId: session.activeOrganizationId,
+            },
+          }),
+        ]).catch(mapPrismaError);
 
         if (transaction instanceof MappedPrismaError) {
           return status(transaction.status, transaction.response);
@@ -186,29 +184,27 @@ export default () =>
         )
           return status(403, tr.error.organization.insufficentPermission);
 
-        const transaction = await prisma
-          .$transaction([
-            prisma.stockMovement.findMany({
-              take: query.max,
-              skip: query.max * query.page,
-              where: {
-                organizationId: session.activeOrganizationId,
-              },
-              include: {
-                createdBy: {
-                  select: {
-                    name: true,
-                  },
+        const transaction = await Promise.all([
+          prisma.stockMovement.findMany({
+            take: query.max,
+            skip: query.max * query.page,
+            where: {
+              organizationId: session.activeOrganizationId,
+            },
+            include: {
+              createdBy: {
+                select: {
+                  name: true,
                 },
               },
-            }),
-            prisma.stockMovement.count({
-              where: {
-                organizationId: session.activeOrganizationId,
-              },
-            }),
-          ])
-          .catch(mapPrismaError);
+            },
+          }),
+          prisma.stockMovement.count({
+            where: {
+              organizationId: session.activeOrganizationId,
+            },
+          }),
+        ]).catch(mapPrismaError);
 
         if (transaction instanceof MappedPrismaError) {
           return status(transaction.status, transaction.response);

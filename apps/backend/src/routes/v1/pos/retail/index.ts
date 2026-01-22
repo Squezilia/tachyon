@@ -36,7 +36,7 @@ export default () =>
 
         const currentDate = new Date();
 
-        const [stocks] = await prisma.$transaction([
+        const [stocks] = await Promise.all([
           prisma.stock.findMany({
             where: {
               id: {
@@ -105,7 +105,7 @@ export default () =>
             quantityChange: -specifiedStockForItem,
             reason: 'SALE',
             stockId: stock.id,
-            createdBy: session.userId,
+            createdById: session.userId,
           });
 
           const subtotal = stock.product.price.mul(specifiedStockForItem);

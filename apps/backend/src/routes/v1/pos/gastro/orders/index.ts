@@ -28,22 +28,20 @@ export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
     )
       return status(403, tr.error.organization.insufficentPermission);
 
-    const transaction = await prisma
-      .$transaction([
-        prisma.order.findMany({
-          take: query.max,
-          skip: query.max * query.page,
-          where: {
-            organizationId: session.activeOrganizationId,
-          },
-        }),
-        prisma.order.count({
-          where: {
-            organizationId: session.activeOrganizationId,
-          },
-        }),
-      ])
-      .catch(mapPrismaError);
+    const transaction = await Promise.all([
+      prisma.order.findMany({
+        take: query.max,
+        skip: query.max * query.page,
+        where: {
+          organizationId: session.activeOrganizationId,
+        },
+      }),
+      prisma.order.count({
+        where: {
+          organizationId: session.activeOrganizationId,
+        },
+      }),
+    ]).catch(mapPrismaError);
 
     if (transaction instanceof MappedPrismaError)
       return status(transaction.status, transaction.response);
