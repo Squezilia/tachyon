@@ -15,7 +15,7 @@
       <div
         :data-find="ActiveTargetFind"
         :style="ActiveTargetPosition"
-        class="absolute bottom-0 h-9 w-20 z-0 border-primary border-b-2 transition-all duration-100 delay-150 data-[find=false]:top-4"
+        class="absolute bottom-0 h-9 w-20 z-0 border-primary border-b-2 transition-all duration-100 delay-150 data-[find=false]:opacity-0"
       />
       <NuxtLink
         v-for="[tabName, path] of Object.entries(tab.routes)"
@@ -87,8 +87,6 @@ async function setActiveTarget(path: string) {
       return;
     }
   }
-  ActiveTargetPosition.value.left = `0px`;
-  ActiveTargetPosition.value.width = `0px`;
   ActiveTargetFind.value = false;
   nextTick();
 }

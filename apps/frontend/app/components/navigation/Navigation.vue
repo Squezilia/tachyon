@@ -65,10 +65,12 @@ const depthTraversalPath = computed(() => {
 
   return { traversalTree: traversal, currentTabs: currentTabs };
 });
+
+const assistantToggle = ref(false);
 </script>
 
 <template>
-  <div class="flex z-50 sticky -top-16 flex-col border-b w-screen">
+  <div class="flex z-50 sticky top-0 flex-col border-b w-screen">
     <div
       class="border-b h-16 flex flex-row items-center p-4 px-6 bg-navigation"
     >
@@ -101,10 +103,17 @@ const depthTraversalPath = computed(() => {
     </div>
     <div class="h-12 flex items-center bg-navigation/70 backdrop-blur-sm">
       <NavTabs :tab="depthTraversalPath.currentTabs" />
-      <Button variant="ghost" class="ml-auto mr-4">
+      <Button
+        :variant="assistantToggle ? 'default' : 'ghost'"
+        class="ml-auto mr-4"
+        @click="assistantToggle = !assistantToggle"
+      >
         <PanelRight />
-        Assistant
+        Asistan
       </Button>
+      <ClientOnly>
+        <ChatUI :toggle="assistantToggle" />
+      </ClientOnly>
     </div>
   </div>
 </template>
