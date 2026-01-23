@@ -4,7 +4,6 @@ import NavCommand from './NavCommand.vue';
 import NavOrganization from './NavOrganization.vue';
 import NavTabs from './NavTabs.vue';
 import NavUser from './NavUser.vue';
-import { PanelRight } from 'lucide-vue-next';
 
 export type Tabs = Record<string, Tab>;
 
@@ -103,14 +102,19 @@ const assistantToggle = ref(false);
     </div>
     <div class="h-12 flex items-center bg-navigation/70 backdrop-blur-sm">
       <NavTabs :tab="depthTraversalPath.currentTabs" />
-      <Button
-        :variant="assistantToggle ? 'default' : 'ghost'"
-        class="ml-auto mr-4"
-        @click="assistantToggle = !assistantToggle"
-      >
-        <PanelRight />
-        Asistan
-      </Button>
+      <TooltipSimplified class="ml-auto" text="Yapay zeka asistan sohbeti">
+        <button
+          :data-active="assistantToggle"
+          class="ml-auto mr-4 size-8 transition flex items-center justify-center group/toggleButton hover:bg-accent data-[active=true]:bg-primary rounded-full"
+          size="icon"
+          @click="assistantToggle = !assistantToggle"
+        >
+          <Icon
+            name="fluent:chat-sparkle-16-filled"
+            class="size-5 group-data-[active=true]/toggleButton:text-primary-foreground"
+          />
+        </button>
+      </TooltipSimplified>
       <ClientOnly>
         <ChatUI :toggle="assistantToggle" />
       </ClientOnly>

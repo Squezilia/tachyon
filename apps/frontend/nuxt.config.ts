@@ -82,6 +82,10 @@ export default defineNuxtConfig({
     componentDir: './app/components/ui',
   },
 
+  icon: {
+    mode: 'svg',
+  },
+
   fonts: {
     provider: 'google',
     families: [
