@@ -31,7 +31,12 @@ import {
 } from '@/components/ui/select';
 import { valueUpdater } from '@/utils/valueUpdater';
 
-type ServerMeta = { max: number; page: number; total: number };
+export type ServerMeta = { max: number; page: number; total: number };
+
+export type ServerPaginate<T> = {
+  data: T[];
+  meta: ServerMeta;
+};
 
 const props = defineProps<{
   columns: ColumnDef<TData, TValue>[];

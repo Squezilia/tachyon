@@ -52,5 +52,11 @@ export default {
         reason: 'İstenilen vergi sistemde mevcut değil.',
       },
     },
+    assistant: {
+      notFound: {
+        error: 'Sohbet Bulunamadı',
+        reason: 'İstenilen sohbet sistemde mevcut değil.',
+      },
+    },
   },
 } satisfies Language;

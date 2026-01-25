@@ -2,14 +2,16 @@
 import { ArrowUp, Check, ChevronDown, Plus, X } from 'lucide-vue-next';
 import type { PropType } from 'vue';
 
-defineProps<{
-  toggle?: boolean;
+const props = defineProps<{
+  running?: boolean;
 }>();
 
-const modes = { agent: 'Agent', chat: 'Sohbet', auto: 'Otomatik' };
+const modes = { agent: 'Agent', chat: 'Sohbet' };
 const models = {
-  gemini3: 'Gemini 3',
-  gemini25flash: 'Gemini 2.5-flash',
+  'gemma-3-27b-it': 'Gemma 3 (High)',
+  'gemini-2.5-flash': 'Gemini 2.5 Flash',
+  'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+  'gemma-3-12b-it': 'Gemma 3 (Low)',
 };
 
 export type AssistantMode = keyof typeof modes;
@@ -17,12 +19,12 @@ export type AssistantModel = keyof typeof models;
 
 const assistantMode = defineModel('mode', {
   type: String as PropType<AssistantMode>,
-  default: 'auto',
+  default: 'chat',
   required: true,
 });
 const assistantModel = defineModel('model', {
   type: String as PropType<AssistantModel>,
-  default: 'gemini25flash',
+  default: 'gemma-3-27b-it',
   required: true,
 });
 
@@ -41,13 +43,13 @@ const contextList = [
 
 const emit = defineEmits<{
   submit: [string];
+  abort: [];
 }>();
 
 const content = ref('');
 
 function submit(ev: KeyboardEvent) {
-  if (ev.shiftKey) return;
-  if (content.value.trim().length < 1) return;
+  if (content.value.trim().length < 1 || ev.shiftKey || props.running) return;
   emit('submit', content.value);
   content.value = '';
   ev.preventDefault();
@@ -55,8 +57,8 @@ function submit(ev: KeyboardEvent) {
 </script>
 
 <template>
-  <InputGroup>
-    <InputGroupAddon align="block-start">
+  <InputGroup class="max-w-2xl mx-auto">
+    <InputGroupAddon v-if="false" align="block-start">
       <ChatContextChip> <Plus /> İçerik Ekle </ChatContextChip>
       <ChatContextChip v-for="context in contextList" :key="context.id">
         <X /> {{ context.name }}
@@ -64,6 +66,7 @@ function submit(ev: KeyboardEvent) {
     </InputGroupAddon>
     <InputGroupTextarea
       v-model="content"
+      :disabled="running"
       placeholder="Mesaj yazın..."
       @keydown.enter="submit"
     />
@@ -119,9 +122,10 @@ function submit(ev: KeyboardEvent) {
         class="rounded-full ml-auto"
         variant="default"
         size="icon-xs"
-        @click="submit"
+        @click="running ? emit('abort') : submit"
       >
-        <ArrowUp />
+        <Icon v-if="running" name="fluent:stop-16-filled" />
+        <ArrowUp v-else />
       </InputGroupButton>
     </InputGroupAddon>
   </InputGroup>

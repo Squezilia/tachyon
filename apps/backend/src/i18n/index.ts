@@ -21,6 +21,9 @@ export default interface Language {
     tax: {
       notFound: ResponseError;
     };
+    assistant: {
+      notFound: ResponseError;
+    };
   };
 }
 

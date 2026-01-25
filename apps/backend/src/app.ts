@@ -16,6 +16,7 @@ import campaigns from './routes/v1/management/campaigns';
 import categories from './routes/v1/inventory/categories';
 import products from './routes/v1/inventory/products';
 import stocks from './routes/v1/inventory/stocks';
+import assistant from './routes/v1/assistant';
 
 export const app = new Elysia()
   .use(wrap(logger))
@@ -61,6 +62,7 @@ export const app = new Elysia()
   })
   .group('/v1', (app) =>
     app
+      .group('/assistant', (app) => app.use(assistant()))
       .group('/inventory', (app) =>
         app.use(products()).use(categories()).use(stocks())
       )

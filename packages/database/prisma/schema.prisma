@@ -47,6 +47,8 @@ model User {
   sells           Sell[]
   orders          Order[]
   stockMovements  StockMovement[]
+  messages        Message[]
+  chats           Chat[]
 
   @@unique([email])
   @@map("user")
@@ -560,4 +562,31 @@ model CartProduct {
   @@index([productId])
   @@index([sellId, productId])
   @@index([orderId, productId])
+}
+
+model Chat {
+  id String @id @default(uuid(7))
+
+  issuer   User   @relation(fields: [issuerId], references: [id])
+  issuerId String
+
+  name String
+
+  messages Message[]
+}
+
+model Message {
+  id String @id @default(uuid(7))
+
+  isSystemMessage Boolean @default(false)
+
+  sender   User?   @relation(fields: [senderId], references: [id])
+  senderId String?
+
+  content String
+
+  createdAt DateTime @default(now())
+
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  chatId String
 }
