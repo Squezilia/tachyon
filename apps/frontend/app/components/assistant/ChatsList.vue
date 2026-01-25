@@ -48,7 +48,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto flex flex-col items-start gap-1.5">
+  <div
+    v-if="chats.length > 0"
+    class="h-full overflow-y-auto flex flex-col items-start gap-1.5"
+  >
     <AlternateHeading>Sohbetler</AlternateHeading>
     <button
       v-for="oldChat of chats"
@@ -78,5 +81,8 @@ onMounted(() => {
         :class="`size-4 inline ${loadingChats ? 'animate-spin' : ''}`"
       />
     </button>
+  </div>
+  <div v-else class="my-auto flex">
+    <SubHeading class="text-center">Size nasıl yardımcı olabilirim?</SubHeading>
   </div>
 </template>

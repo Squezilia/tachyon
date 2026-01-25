@@ -22,6 +22,7 @@ import logger from '@backend/lib/logger';
 import { Chat, ChatPlain, MessagePlain } from '@database';
 import { QueryPaginate, ResponsePaginate } from '@/model';
 import tr from '@/i18n/tr';
+import { Prisma } from '@database/generated/prisma/client';
 
 type AISDKMessage =
   | SystemModelMessage
@@ -78,7 +79,7 @@ export default () =>
       '/:id',
       async ({ session, params }) => {
         const chat = await prisma.chat
-          .findFirst({ where: { id: params.id } })
+          .findFirst({ where: { id: params.id, issuerId: session.userId } })
           .catch(mapPrismaError);
 
         if (chat instanceof MappedPrismaError)
@@ -95,50 +96,21 @@ export default () =>
       async ({ session, params, query }) => {
         const PAGE_SIZE = 10;
 
-        if (!query.cursor) {
-          const messages = await prisma.message
-            .findMany({
-              orderBy: { id: 'desc' },
-              take: PAGE_SIZE,
-              where: {
-                chat: {
-                  id: params.id,
-                  issuerId: session.userId,
-                },
-              },
-            })
-            .catch(mapPrismaError);
-
-          if (messages instanceof MappedPrismaError)
-            return status(messages.status, messages.response);
-
-          const nextCursor =
-            messages.length === PAGE_SIZE
-              ? messages[messages.length - 1].id
-              : undefined;
-
-          return {
-            data: messages,
-            meta: {
-              nextCursor,
-              cursorLength: PAGE_SIZE,
+        const messagesQuery: Prisma.MessageFindManyArgs = {
+          orderBy: { id: 'desc' },
+          take: PAGE_SIZE,
+          where: {
+            chat: {
+              id: params.id,
+              issuerId: session.userId,
             },
-          };
-        }
+          },
+          cursor: query.cursor ? { id: query.cursor } : undefined,
+          skip: query.cursor ? 1 : 0,
+        };
 
         const messages = await prisma.message
-          .findMany({
-            orderBy: { id: 'desc' },
-            cursor: { id: query.cursor },
-            skip: 1,
-            take: PAGE_SIZE,
-            where: {
-              chat: {
-                id: params.id,
-                issuerId: session.userId,
-              },
-            },
-          })
+          .findMany(messagesQuery)
           .catch(mapPrismaError);
 
         if (messages instanceof MappedPrismaError)
@@ -203,7 +175,7 @@ export default () =>
     )
     .post(
       '/:id/message',
-      async function* ({ params, session, status, body }) {
+      async function ({ params, session, status, body }) {
         const chat = await prisma.chat
           .findFirst({
             where: {
@@ -314,7 +286,7 @@ export default () =>
           },
         });
 
-        yield inference.textStream;
+        return inference.textStream;
       },
       {
         auth: true,
