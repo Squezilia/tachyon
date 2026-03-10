@@ -21,7 +21,7 @@ const selectedChatId = ref<string | null>(null);
 async function getChats() {
   loadingChats.value = true;
   const data = await $api<ServerPaginate<typeof ChatPlain.static>>(
-    '/v1/assistant/chats',
+    '/v1/assistant/chat',
     { query: { page: chatsPage.value, max: 8 } }
   );
   if (!data) return;
@@ -37,7 +37,7 @@ async function getChats() {
 async function selectChat(id: string) {
   selectedChatId.value = id;
   selectedChatLoading.value = true;
-  const data = await $api<typeof ChatPlain.static>(`/v1/assistant/${id}`);
+  const data = await $api<typeof ChatPlain.static>(`/v1/assistant/chat/${id}`);
   emit('select', data);
   selectedChatLoading.value = false;
 }

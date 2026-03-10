@@ -53,6 +53,16 @@ function scroll() {
   }
 }
 
+function change() {
+  if (!chatWindow.value || !chatWindowContent.value) return;
+  if (anchoredToBottom.value) {
+    chatWindow.value.scrollTo({
+      behavior: 'instant',
+      top: chatWindowContent.value.getBoundingClientRect().height,
+    });
+  }
+}
+
 export interface UIChatMessage {
   sender: 'user' | 'system' | 'model';
   content: string;
@@ -60,7 +70,12 @@ export interface UIChatMessage {
 </script>
 
 <template>
-  <div ref="chatWindow" class="h-full overflow-y-auto" @scrollend="scroll">
+  <div
+    ref="chatWindow"
+    class="h-full overflow-y-auto"
+    @scrollend="scroll"
+    @change="change"
+  >
     <div ref="chatWindowContent" class="space-y-2.5">
       <div
         v-for="(message, idx) of history"

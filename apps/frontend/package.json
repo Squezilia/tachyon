@@ -54,6 +54,8 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@iconify-json/fa6-brands": "^1.2.6",
+    "@iconify-json/fluent": "^1.2.40",
     "@sinclair/typebox": "^0.34.41",
     "@types/howler": "^2.2.12",
     "@types/markdown-it": "^14.1.2",

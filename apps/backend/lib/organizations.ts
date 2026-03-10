@@ -79,7 +79,7 @@ export const accountant = ac.newRole({
   campaign: ['view'],
 });
 
-export default organization({
+export const organizationSettings = {
   ac,
   roles: {
     admin,
@@ -88,4 +88,6 @@ export default organization({
     staff,
     accountant,
   },
-});
+};
+
+export default organization(organizationSettings);

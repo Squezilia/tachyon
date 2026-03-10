@@ -34,7 +34,7 @@ export default () =>
   new Elysia()
     .use(authMacro)
     .get(
-      '/chats',
+      '/chat',
       async ({ session, query }) => {
         const transaction = await Promise.all([
           prisma.chat.findMany({
@@ -76,7 +76,7 @@ export default () =>
       }
     )
     .get(
-      '/:id',
+      '/chat/:id',
       async ({ session, params }) => {
         const chat = await prisma.chat
           .findFirst({ where: { id: params.id, issuerId: session.userId } })
@@ -92,7 +92,7 @@ export default () =>
       { auth: true, response: { ...ResponseSchemaSet, 200: ChatPlain } }
     )
     .get(
-      '/:id/messages',
+      '/chat/:id/message',
       async ({ session, params, query }) => {
         const PAGE_SIZE = 10;
 
@@ -149,7 +149,7 @@ export default () =>
       }
     )
     .post(
-      '/createChat',
+      '/chat',
       async function ({ session }) {
         const chat = await prisma.chat
           .create({
@@ -174,7 +174,7 @@ export default () =>
       }
     )
     .post(
-      '/:id/message',
+      '/chat/:id/message',
       async function ({ params, session, status, body }) {
         const chat = await prisma.chat
           .findFirst({

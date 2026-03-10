@@ -251,4 +251,8 @@
     overflow: auto;
     max-width: var(--markdown-container-width);
   }
+
+  .markdown a {
+    text-decoration: underline;
+  }
 }

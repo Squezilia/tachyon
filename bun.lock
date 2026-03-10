@@ -89,6 +89,8 @@
         "zod": "3.25.76",
       },
       "devDependencies": {
+        "@iconify-json/fa6-brands": "^1.2.6",
+        "@iconify-json/fluent": "^1.2.40",
         "@sinclair/typebox": "^0.34.41",
         "@types/howler": "^2.2.12",
         "@types/markdown-it": "^14.1.2",
@@ -324,6 +326,10 @@
     "@humanwhocodes/module-importer": ["@humanwhocodes/module-importer@1.0.1", "", {}, "sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA=="],
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
+
+    "@iconify-json/fa6-brands": ["@iconify-json/fa6-brands@1.2.6", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-twL3X4KWcxAhbc1vz/mIDsVr+CAItk1/EIfxKUVQtpv6O4eydk5KNYqTZWdvJNHGInUgd6vKg21aWfVgb5DXEg=="],
+
+    "@iconify-json/fluent": ["@iconify-json/fluent@1.2.40", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-mGHKd14H0RyS2PLRn2Q1n0M+PW+TQRFuk12QjJ6N7yi2BlKaMbEQYDW7rlc5hvvJ2smpp+TpakBc2ooqyQKxZw=="],
 
     "@iconify/collections": ["@iconify/collections@1.0.621", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-md55k0SUK3ICEsqh9lEUVuu2upGCgzT0AqtLCq/74lE8Jp7G1wl8BtyDBls+YqpSFUeIyN082qmVFqFF6a0KYA=="],
 

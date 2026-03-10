@@ -48,11 +48,12 @@ const emit = defineEmits<{
 
 const content = ref('');
 
-function submit(ev: KeyboardEvent) {
-  if (content.value.trim().length < 1 || ev.shiftKey || props.running) return;
+function submit(ev?: KeyboardEvent) {
+  if (content.value.trim().length < 1 || (ev && ev.shiftKey) || props.running)
+    return;
   emit('submit', content.value);
   content.value = '';
-  ev.preventDefault();
+  if (ev) ev.preventDefault();
 }
 </script>
 
@@ -122,7 +123,7 @@ function submit(ev: KeyboardEvent) {
         class="rounded-full ml-auto"
         variant="default"
         size="icon-xs"
-        @click="running ? emit('abort') : submit"
+        @click="running ? emit('abort') : submit()"
       >
         <Icon v-if="running" name="fluent:stop-16-filled" />
         <ArrowUp v-else />

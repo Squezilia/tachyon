@@ -47,7 +47,7 @@ async function submit(content: string) {
 }
 
 async function createChat() {
-  chat.value = await $api<Chat>(`/v1/assistant/createChat`, {
+  chat.value = await $api<Chat>(`/v1/assistant/chat`, {
     method: 'POST',
     onResponseError({ response }) {
       if (response.ok) return;
@@ -70,7 +70,7 @@ async function sendMessage(
   abortController = new AbortController();
 
   const res = await $api<ReadableStream>(
-    `/v1/assistant/${chat.value.id}/message`,
+    `/v1/assistant/chat/${chat.value.id}/message`,
     {
       method: 'POST',
       body: {
@@ -102,7 +102,7 @@ async function sendMessage(
       (async () => {
         if (isFirstMessage)
           chat.value = await $api<typeof ChatPlain.static>(
-            `/v1/assistant/${chat.value?.id}`
+            `/v1/assistant/chat/${chat.value?.id}`
           );
       })();
       running.value = false;
@@ -116,7 +116,7 @@ async function sendMessage(
 async function fetchMessages() {
   if (!chat.value) return;
   const response = await $api<MessagesResponse>(
-    `/v1/assistant/${chat.value.id}/messages`,
+    `/v1/assistant/chat/${chat.value.id}/message`,
     {
       cache: 'no-cache',
       query: { cursor: messageCursor.value || undefined },
