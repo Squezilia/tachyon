@@ -176,6 +176,8 @@ export default () =>
     .post(
       '/chat/:id/message',
       async function ({ params, session, status, body }) {
+        const AI_MAX_MESSAGE_PAGE_SIZE = 40;
+
         const chat = await prisma.chat
           .findFirst({
             where: {
@@ -183,7 +185,12 @@ export default () =>
               issuerId: session.userId,
             },
             include: {
-              messages: true,
+              messages: {
+                orderBy: {
+                  id: 'desc',
+                },
+                take: AI_MAX_MESSAGE_PAGE_SIZE,
+              },
             },
           })
           .catch(mapPrismaError);
@@ -274,13 +281,27 @@ export default () =>
           messages: mappedMessages,
           async onAbort(event) {
             logger.error(`${chat.id} Aborted!`);
+            await prisma.message.update({
+              where: {
+                id: inferenceMessageId,
+              },
+              data: {
+                content: event.steps
+                  .map((step) => {
+                    step.text;
+                  })
+                  .join(' '),
+              },
+            });
           },
           async onFinish(inference) {
             logger.info(`${chat.id} Finished!`);
-            await prisma.message.create({
+            await prisma.message.update({
+              where: {
+                id: inferenceMessageId,
+              },
               data: {
                 content: inference.text,
-                chatId: chat.id,
               },
             });
           },
