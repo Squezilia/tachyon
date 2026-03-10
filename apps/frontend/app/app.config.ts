@@ -12,6 +12,7 @@ export default defineAppConfig({
       routes: {
         Satışlar: '/dash/pos/sells',
         Siparişler: '/dash/pos/orders',
+        Masalar: '/dash/pos/tables',
       },
     },
     Envanter: {

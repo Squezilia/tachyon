@@ -15,8 +15,8 @@ import {
 const formSchema = z.object({
   name: z
     .string()
-    .min(2, 'Kategori adı 2 karakterden kısa olamaz.')
-    .max(64, 'Kategori adı 64 karakterden uzun olamaz.'),
+    .min(2, 'Masa adı 2 karakterden kısa olamaz.')
+    .max(64, 'Masa adı 64 karakterden uzun olamaz.'),
   price: z
     .number()
     .min(0, 'Ürün fiyatı negatif olamaz.')

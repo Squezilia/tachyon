@@ -24,6 +24,9 @@ export default interface Language {
     assistant: {
       notFound: ResponseError;
     };
+    table: {
+      notFound: ResponseError;
+    };
   };
 }
 

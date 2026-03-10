@@ -58,5 +58,11 @@ export default {
         reason: 'İstenilen sohbet sistemde mevcut değil.',
       },
     },
+    table: {
+      notFound: {
+        error: 'Masa Bulunamadı',
+        reason: 'İstenilen masa sistemde mevcut değil.',
+      },
+    },
   },
 } satisfies Language;

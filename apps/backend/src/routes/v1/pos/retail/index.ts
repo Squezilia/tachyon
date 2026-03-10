@@ -20,7 +20,7 @@ export default () =>
       auth: true,
       detail: { tags: ['Retail'], security: [{ CookieAuth: [] }] },
     })
-    // request (stockList) -> check stocks -> run campaign engine -> run tax engine -> create stock movements -> create sell -> response (sell)
+    // request (stockList) -> check stocks -> run campaign engine (skip) -> run tax engine -> create stock movements -> create sell -> response (sell)
     .post(
       '/sell',
       async ({ request: { headers }, body, session, user, status }) => {
@@ -49,39 +49,6 @@ export default () =>
               product: {
                 include: {
                   appliedTaxes: true,
-                },
-              },
-            },
-          }),
-          prisma.campaign.findMany({
-            where: {
-              id: {
-                in: body.campaigns,
-              },
-              organizationId: session.activeOrganizationId,
-            },
-            include: {
-              application: true,
-              availabilities: {
-                where: {
-                  OR: [
-                    {
-                      before: {
-                        gte: currentDate,
-                      },
-                    },
-                    {
-                      after: {
-                        lte: currentDate,
-                      },
-                    },
-                  ],
-                },
-              },
-              targets: {
-                include: {
-                  products: true,
-                  categories: true,
                 },
               },
             },
