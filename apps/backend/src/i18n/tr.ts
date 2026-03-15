@@ -28,6 +28,14 @@ export default {
         reason: 'İstenilen satış sistemde mevcut değil.',
       },
     },
+    gastro: {
+      order: {
+        notFound: {
+          error: 'Sipariş Bulunamadı',
+          reason: 'İstenilen sipariş sistemde mevcut değil.',
+        },
+      },
+    },
     campaign: {
       notFound: {
         error: 'Kampanya Bulunamadı',

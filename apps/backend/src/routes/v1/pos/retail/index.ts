@@ -12,6 +12,7 @@ import {
 import prisma from 'lib/prisma';
 import { v7 } from 'uuid';
 import sells from './sells';
+import calculateTotal from '../service';
 
 export default () =>
   new Elysia({ prefix: '/retail' })
@@ -35,8 +36,6 @@ export default () =>
         )
           return status(403, tr.error.organization.insufficentPermission);
 
-        const currentDate = new Date();
-
         const [stocks] = await Promise.all([
           prisma.stock.findMany({
             where: {
@@ -48,80 +47,28 @@ export default () =>
             include: {
               product: {
                 include: {
-                  appliedTaxes: true,
+                  appliedTaxes: {
+                    orderBy: {
+                      priority: 'asc',
+                    },
+                  },
                 },
               },
             },
           }),
         ]);
 
-        const movementConfig: Prisma.StockMovementCreateManyInput[] = [];
-        const cartConfig: Prisma.CartProductCreateManyInput[] = [];
-        const appliedTaxes: Prisma.CartProductTaxCreateManyInput[] = [];
+        const calculatedTotal = await calculateTotal(
+          session.activeOrganizationId,
+          session.userId,
+          stocks,
+          body.stocks
+        ).catch(mapPrismaError);
 
-        for (const stock of stocks) {
-          const specifiedStockForItem = body.stocks[stock.id + ''];
-          if (
-            !specifiedStockForItem ||
-            specifiedStockForItem > stock.quantity ||
-            specifiedStockForItem < 1
-          )
-            return status(400, tr.error.retail.stockError);
+        if (calculatedTotal instanceof MappedPrismaError)
+          return status(calculatedTotal.status, calculatedTotal.response);
 
-          movementConfig.push({
-            organizationId: session.activeOrganizationId,
-            quantityChange: -specifiedStockForItem,
-            reason: 'SALE',
-            stockId: stock.id,
-            createdById: session.userId,
-          });
-
-          const subtotal = stock.product.price.mul(specifiedStockForItem);
-          const taxes = stock.product.appliedTaxes.sort((a, b) => {
-            return a.priority - b.priority;
-          });
-
-          const cartProductId = v7();
-
-          let appliedTax = Decimal(0);
-          let runningBase = subtotal;
-
-          for (const tax of taxes) {
-            const baseAmount = tax.isCumulative ? runningBase : subtotal;
-
-            const taxAmount = tax.isFixed
-              ? tax.rate.mul(specifiedStockForItem)
-              : baseAmount.mul(tax.rate.div(100));
-
-            appliedTax = appliedTax.plus(taxAmount);
-
-            appliedTaxes.push({
-              cartProductId,
-              isFixed: tax.isFixed,
-              priority: tax.priority,
-              taxName: tax.name,
-              taxAmount,
-              baseAmount,
-              taxId: tax.id,
-              taxRate: tax.rate,
-            });
-
-            if (tax.isCumulative) runningBase = runningBase.plus(taxAmount);
-          }
-
-          const total = subtotal.plus(appliedTax);
-
-          cartConfig.push({
-            id: cartProductId,
-            priceAtSale: stock.product.price,
-            productId: stock.productId,
-            productName: stock.product.name,
-            quantity: specifiedStockForItem,
-            totalTax: appliedTax,
-            subtotal,
-            total,
-          });
-        }
+        const { appliedTaxes, cartConfig, movementConfig } = calculatedTotal;
 
         const transaction = await prisma
           .$transaction([

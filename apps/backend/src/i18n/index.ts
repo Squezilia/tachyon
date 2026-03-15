@@ -9,6 +9,11 @@ export default interface Language {
       sellIsAlreadyReversed: ResponseError;
       notFound: ResponseError;
     };
+    gastro: {
+      order: {
+        notFound: ResponseError;
+      };
+    };
     campaign: {
       notFound: ResponseError;
     };

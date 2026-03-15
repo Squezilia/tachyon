@@ -16,6 +16,7 @@
     "db:generate": "bunx prisma generate --schema=packages/database/prisma/schema.prisma",
     "db:push": "bunx prisma db push --schema=packages/database/prisma/schema.prisma",
     "db:seed": "bun run apps/backend/src/seed.ts",
+    "db:studio": "bunx prisma studio --schema=packages/database/prisma/schema.prisma",
     "backend:lint": "cd apps/backend && eslint",
     "frontend:lint": "cd apps/frontend && eslint"
   },

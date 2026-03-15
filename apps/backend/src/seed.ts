@@ -538,9 +538,17 @@ async function createCartProductSnapshot(options: {
   orderId?: string;
   taxSnapshots?: TaxSnapshot[];
   taxesById: Map<string, TaxSnapshot>;
+  stockId: string;
 }) {
-  const { product, quantity, sellId, orderId, taxSnapshots, taxesById } =
-    options;
+  const {
+    product,
+    quantity,
+    sellId,
+    orderId,
+    taxSnapshots,
+    taxesById,
+    stockId,
+  } = options;
   if (!sellId && !orderId)
     throw new Error(`Cart product must reference a sell or an order`);
 
@@ -568,6 +576,7 @@ async function createCartProductSnapshot(options: {
       total,
       sellId: sellId ?? null,
       orderId: orderId ?? null,
+      stockId,
     },
   });
 
@@ -582,6 +591,7 @@ async function createCartProductSnapshot(options: {
         taxId: tax.tax.id,
         taxName: tax.tax.name,
         isFixed: tax.tax.isFixed,
+        isCumulative: tax.tax.isCumulative,
         priority: tax.tax.priority,
         taxRate: tax.tax.rate,
         taxAmount: tax.taxAmount,
@@ -589,6 +599,8 @@ async function createCartProductSnapshot(options: {
       })),
     });
   }
+
+  return { subtotal, totalTax, total };
 }
 
 async function enrichWithRandomData(params: {
@@ -702,11 +714,17 @@ async function enrichWithRandomData(params: {
       const pool = productPool();
       if (!pool.length) break;
       const product = pool[rng.nextInt(0, pool.length - 1)];
+      const availableStocks = Array.from(stocks).filter(
+        (stock) => stock[1].productId === product.id
+      );
       await createCartProductSnapshot({
         product,
         quantity: randomIntInclusive(1, 5),
         sellId: sell.id,
         taxesById,
+        stockId:
+          availableStocks[Math.floor(availableStocks.length * Math.random())][1]
+            .id,
       });
     }
   }
@@ -725,20 +743,51 @@ async function enrichWithRandomData(params: {
         organizationId,
         createdAt: hoursAgo(randomIntInclusive(1, 48)),
         issuerId,
+        rawTotal: 0,
+        tax: 0,
+        total: 0,
       },
     });
     orders.set(order.id, { id: order.id });
 
+    let rawTotal = Decimal(0);
+    let total = Decimal(0);
+    let tax = Decimal(0);
     const lineCount = randomIntInclusive(1, 3);
     for (let line = 0; line < lineCount; line++) {
       const pool = productPool();
       if (!pool.length) break;
       const product = pool[rng.nextInt(0, pool.length - 1)];
-      await createCartProductSnapshot({
+      const availableStocks = Array.from(stocks).filter(
+        (stock) => stock[1].productId === product.id
+      );
+      const {
+        subtotal,
+        total: productTotal,
+        totalTax,
+      } = await createCartProductSnapshot({
         product,
         quantity: randomIntInclusive(1, 4),
         orderId: order.id,
         taxesById,
+        stockId:
+          availableStocks[Math.floor(availableStocks.length * Math.random())][1]
+            .id,
+      });
+
+      total = productTotal.plus(total);
+      rawTotal = subtotal.plus(rawTotal);
+      tax = totalTax.plus(tax);
+
+      await prisma.order.update({
+        where: {
+          id: orderId,
+        },
+        data: {
+          rawTotal,
+          tax,
+          total,
+        },
       });
     }
   }
@@ -1201,12 +1250,16 @@ async function seed() {
           config.hoursAgo !== undefined
             ? hoursAgo(config.hoursAgo)
             : minutesAgo(config.minutesAgo ?? 0);
+
         const order = await prisma.order.create({
           data: {
             status: config.status as any,
             organizationId: organization.id,
             createdAt,
             issuerId: users.cashier.id,
+            rawTotal: 0,
+            tax: 0,
+            total: 0,
           },
         });
         orders.set(order.id, { id: order.id });
@@ -1233,15 +1286,40 @@ async function seed() {
         if (!snapshot) throw new Error(`Tax ${key} missing for cart product`);
         return snapshot;
       });
+      const availableStocks = Array.from(stocks).filter(
+        (stock) => stock[1].productId === product.id
+      );
 
-      await createCartProductSnapshot({
+      const { subtotal, total, totalTax } = await createCartProductSnapshot({
         product,
         quantity: config.quantity,
         sellId,
         orderId,
         taxSnapshots,
         taxesById,
+        stockId:
+          availableStocks[Math.floor(availableStocks.length * Math.random())][1]
+            .id,
       });
+
+      if (orderId) {
+        await prisma.order.update({
+          where: {
+            id: orderId,
+          },
+          data: {
+            total: {
+              increment: total,
+            },
+            rawTotal: {
+              increment: subtotal,
+            },
+            tax: {
+              increment: totalTax,
+            },
+          },
+        });
+      }
     }
 
     logger.info(

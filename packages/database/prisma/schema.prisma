@@ -251,8 +251,9 @@ model Stock {
   lastRestockedAt DateTime?
   stockMovements  StockMovement[]
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
+  cartProducts   CartProduct[]
 
   @@unique([organizationId, productId])
   @@index([productId])
@@ -491,6 +492,13 @@ model Order {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
+  /// @prismabox.typeOverwrite=t.String()
+  rawTotal Decimal
+  /// @prismabox.typeOverwrite=t.String()
+  total    Decimal
+  /// @prismabox.typeOverwrite=t.String()
+  tax      Decimal
+
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
 
@@ -518,13 +526,14 @@ model CartProductTax {
   //
   // For snapshot
   //
-  taxName   String
-  isFixed   Boolean
-  priority  Int
+  taxName      String
+  isFixed      Boolean
+  isCumulative Boolean
+  priority     Int
   /// @prismabox.typeOverwrite=t.String()
-  taxRate   Decimal
+  taxRate      Decimal
   /// @prismabox.typeOverwrite=t.String()
-  taxAmount Decimal
+  taxAmount    Decimal
 
   // For cumulative calculations
   /// @prismabox.typeOverwrite=t.String()
@@ -541,6 +550,9 @@ model CartProduct {
 
   product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
   productId String
+
+  stock   Stock  @relation(fields: [stockId], references: [id], onDelete: Cascade)
+  stockId String
 
   //
   // For Snapshot

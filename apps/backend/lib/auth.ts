@@ -1,13 +1,10 @@
-import { betterAuth, InferSession } from 'better-auth';
+import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin, twoFactor } from 'better-auth/plugins';
-import Elysia, { Context, StatusMap } from 'elysia';
-import { AccessControl, Statements } from 'better-auth/plugins/access';
-import organizations, { statement } from './organizations';
-import { InferOrganizationRolesFromOption } from 'better-auth/plugins/organization';
+import Elysia, { StatusMap } from 'elysia';
+import organizations from './organizations';
 import prisma from './prisma';
-import tr from '@/i18n/tr';
-import { ResponseError } from '@/i18n';
+import { openAPI } from 'better-auth/plugins';
 
 export const auth = betterAuth({
   trustedOrigins: ['http://localhost:8080/', '*'],
@@ -17,7 +14,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  plugins: [admin(), organizations, twoFactor()],
+  plugins: [admin(), organizations, twoFactor(), openAPI()],
 });
 
 export const authMacro = new Elysia({ name: 'better-auth' }).macro({
@@ -41,27 +38,26 @@ export const authMacro = new Elysia({ name: 'better-auth' }).macro({
   },
 });
 
-type FromDefinitionToStatement<
-  T extends Readonly<Record<string, Readonly<string[]>>>,
-> = {
-  [k in keyof T]?: T[k][number][] | undefined;
-};
+let _schema: ReturnType<typeof auth.api.generateOpenAPISchema>;
+const getSchema = async () => (_schema ??= auth.api.generateOpenAPISchema());
 
-type Values<T> = T[keyof T];
+export const OpenAPI = {
+  getPaths: (prefix = '/api/auth') =>
+    getSchema().then(({ paths }) => {
+      const reference: typeof paths = Object.create(null);
 
-export async function validateOrganizationPermission(
-  headers: Headers,
-  session: InferSession<typeof auth>,
-  asd: FromDefinitionToStatement<typeof statement>
-): Promise<[400 | 403, ResponseError] | undefined> {
-  if (!session.activeOrganizationId)
-    return [400, tr.error.organization.noActive];
+      for (const path of Object.keys(paths)) {
+        const key = prefix + path;
+        reference[key] = paths[path];
 
-  if (
-    !(await auth.api.hasPermission({
-      headers,
-      body: { permissions: asd },
-    }))
-  )
-    return [403, tr.error.organization.insufficentPermission];
-}
+        for (const method of Object.keys(paths[path])) {
+          const operation = (reference[key] as any)[method];
+
+          operation.tags = ['Better Auth'];
+        }
+      }
+
+      return reference;
+    }) as Promise<any>,
+  components: getSchema().then(({ components }) => components) as Promise<any>,
+} as const;

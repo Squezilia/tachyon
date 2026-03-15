@@ -56,7 +56,12 @@ export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
     const [orders, count] = transaction;
 
     return {
-      data: orders,
+      data: orders.map((order) => ({
+        ...order,
+        tax: order.tax.toString(),
+        total: order.total.toString(),
+        rawTotal: order.rawTotal.toString(),
+      })),
       meta: {
         max: query.max,
         page: query.page,
@@ -79,7 +84,9 @@ export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
       200: ResponsePaginate(
         t.Composite([
           OrderPlain,
-          t.Object({ issuer: t.Object({ name: t.String() }) }),
+          t.Object({
+            issuer: t.Object({ name: t.String() }),
+          }),
         ])
       ),
       403: ErrorResponseSchema,

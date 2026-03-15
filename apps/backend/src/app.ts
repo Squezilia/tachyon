@@ -5,7 +5,7 @@ import swagger from '@elysiajs/swagger';
 import cors from '@elysiajs/cors';
 
 import logger from '../lib/logger';
-import { auth } from '../lib/auth';
+import { auth, OpenAPI } from '../lib/auth';
 
 import hospitality from './routes/v1/pos/gastro';
 import retail from './routes/v1/pos/retail';
@@ -17,6 +17,7 @@ import categories from './routes/v1/inventory/categories';
 import products from './routes/v1/inventory/products';
 import stocks from './routes/v1/inventory/stocks';
 import assistant from './routes/v1/assistant';
+import { openapi } from '@elysiajs/openapi';
 
 export const app = new Elysia()
   .use(wrap(logger))
@@ -26,6 +27,14 @@ export const app = new Elysia()
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization'],
+    })
+  )
+  .use(
+    openapi({
+      documentation: {
+        components: await OpenAPI.components,
+        paths: await OpenAPI.getPaths(),
+      },
     })
   )
   .use(

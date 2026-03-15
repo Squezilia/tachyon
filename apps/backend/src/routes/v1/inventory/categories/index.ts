@@ -10,7 +10,7 @@ import {
   CategoryPlainInputUpdate,
 } from '@database';
 import Elysia, { t } from 'elysia';
-import { auth, authMacro, validateOrganizationPermission } from 'lib/auth';
+import { auth, authMacro } from 'lib/auth';
 import {
   MappedPrismaError,
   mapPrismaError,
