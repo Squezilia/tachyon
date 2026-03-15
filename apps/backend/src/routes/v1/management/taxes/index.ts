@@ -26,7 +26,7 @@ export default () =>
       },
     })
     .post(
-      '/create',
+      '/',
       async ({ request: { headers }, status, body, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -121,6 +121,13 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'Duplicate tax',
+          description:
+            'Create a copy of an existing tax rule (within the active organization).',
+          tags: ['Inventory', 'Taxes'],
+          security: [{ CookieAuth: [] }],
+        },
         response: {
           ...ResponseSchemaSet,
           201: TaxPlain,
@@ -129,7 +136,7 @@ export default () =>
       }
     )
     .get(
-      '/get',
+      '/',
       async ({ request: { headers }, status, session, query }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -194,7 +201,7 @@ export default () =>
       }
     )
     .get(
-      '/get/:id',
+      '/:id',
       async ({ session, params, request: { headers }, status }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -229,6 +236,12 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'Get tax',
+          description: 'Retrieve a tax rule by ID.',
+          tags: ['Inventory', 'Taxes'],
+          security: [{ CookieAuth: [] }],
+        },
         response: {
           ...ResponseSchemaSet,
           200: TaxPlain,
@@ -237,7 +250,7 @@ export default () =>
       }
     )
     .patch(
-      '/update/:id',
+      '/:id',
       async ({ request: { headers }, status, params, body, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -287,7 +300,7 @@ export default () =>
       }
     )
     .delete(
-      '/delete/:id',
+      '/:id',
       async ({ request: { headers }, status, params, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);

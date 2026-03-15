@@ -21,7 +21,7 @@ export default () =>
     .use(orders)
     .use(tables)
     .post(
-      '/order',
+      '/',
       async ({ session, status, request: { headers }, body }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -64,14 +64,8 @@ export default () =>
         if (calculatedTotal instanceof MappedPrismaError)
           return status(calculatedTotal.status, calculatedTotal.response);
 
-        const {
-          appliedTaxes,
-          cartConfig,
-          movementConfig,
-          rawTotal,
-          taxTotal,
-          total,
-        } = calculatedTotal;
+        const { appliedTaxes, cartConfig, movementConfig, sub, tax, total } =
+          calculatedTotal;
 
         const transaction = await prisma
           .$transaction([
@@ -81,8 +75,8 @@ export default () =>
                 tableId: body.tableId,
                 organizationId: session.activeOrganizationId,
                 issuerId: session.userId,
-                rawTotal,
-                tax: taxTotal,
+                sub,
+                tax,
                 total,
                 products: {
                   createMany: {
@@ -107,13 +101,20 @@ export default () =>
 
         return {
           ...order,
-          rawTotal: order.rawTotal.toString(),
+          sub: order.sub.toString(),
           total: order.total.toString(),
           tax: order.tax.toString(),
         };
       },
       {
         auth: true,
+        detail: {
+          summary: 'Create order',
+          description:
+            'Create a new gastro order: validate stock, calculate taxes/totals, create order and related movement/tax records.',
+          tags: ['Gastro', 'Orders'],
+          security: [{ CookieAuth: [] }],
+        },
         body: t.Object({
           tableId: t.Optional(t.String()),
           stocks: t.Record(t.String(), t.Integer()),
@@ -126,7 +127,7 @@ export default () =>
       }
     )
     .post(
-      '/update/:id',
+      '/:id',
       async ({ session, status, params, request: { headers }, body }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -198,9 +199,9 @@ export default () =>
               to: newVal,
               cartId: cartProduct.id,
               taxes: cartProduct.appliedTaxes,
-              sub: cartProduct.subtotal,
+              sub: cartProduct.sub,
               total: cartProduct.total,
-              tax: cartProduct.totalTax,
+              tax: cartProduct.tax,
             };
             continue;
           }
@@ -214,9 +215,9 @@ export default () =>
               to: 0,
               cartId: cartProduct.id,
               taxes: cartProduct.appliedTaxes,
-              sub: cartProduct.subtotal,
+              sub: cartProduct.sub,
               total: cartProduct.total,
-              tax: cartProduct.totalTax,
+              tax: cartProduct.tax,
             };
             continue;
           }
@@ -301,13 +302,10 @@ export default () =>
 
           // item added
           if (diff.change == diff.to) {
-            const { appliedTax, appliedTaxes, subtotal, total } = calculateTax(
-              stock.product,
-              diff.to,
-              diff.cartId
-            );
+            const { appliedTax, appliedTaxes, productSub, total } =
+              calculateTax(stock.product, diff.to, diff.cartId);
 
-            changeInSub = changeInSub.plus(subtotal);
+            changeInSub = changeInSub.plus(productSub);
             changeInTotal = changeInTotal.plus(total);
             changeInTax = changeInTax.plus(appliedTax);
 
@@ -319,8 +317,8 @@ export default () =>
               productId: stock.productId,
               productName: stock.product.name,
               quantity: diff.to,
-              totalTax: appliedTax,
-              subtotal,
+              tax: appliedTax,
+              sub: productSub,
               total,
               stockId: stock.id,
               orderId: order.id,
@@ -329,13 +327,13 @@ export default () =>
           }
 
           // item updated
-          const { appliedTaxes, appliedTax, subtotal, total } = updateTaxes(
+          const { appliedTaxes, appliedTax, productSub, total } = updateTaxes(
             diff.taxes,
             stock.product.price,
             diff.to
           );
 
-          changeInSub = changeInSub.plus(subtotal.sub(diff.sub));
+          changeInSub = changeInSub.plus(productSub.sub(diff.sub));
           changeInTotal = changeInTotal.plus(total.sub(diff.total));
           changeInTax = changeInTax.plus(appliedTax.sub(diff.tax));
 
@@ -347,8 +345,8 @@ export default () =>
             },
             data: {
               quantity: diff.to,
-              totalTax: appliedTax,
-              subtotal,
+              tax: appliedTax,
+              sub: productSub,
               total,
             },
           });
@@ -381,7 +379,7 @@ export default () =>
                 total: {
                   increment: changeInTotal,
                 },
-                rawTotal: {
+                sub: {
                   increment: changeInSub,
                 },
                 tax: {
@@ -398,12 +396,19 @@ export default () =>
         return {
           ...transaction,
           total: transaction.total.toString(),
-          rawTotal: transaction.rawTotal.toString(),
+          sub: transaction.sub.toString(),
           tax: transaction.tax.toString(),
         };
       },
       {
         auth: true,
+        detail: {
+          summary: 'Update order items',
+          description:
+            'Update an open order by replacing its item quantities: compute diffs, record stock movements, update cart products/taxes, and adjust order totals.',
+          tags: ['Gastro', 'Orders'],
+          security: [{ CookieAuth: [] }],
+        },
         body: t.Object({
           stocks: t.Record(t.String(), t.Integer()),
         }),
@@ -416,7 +421,7 @@ export default () =>
     )
     .post(
       '/close/:id',
-      async ({ session, status, params, request: { headers }, body }) => {
+      async ({ session, status, params, request: { headers } }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
 
@@ -461,11 +466,17 @@ export default () =>
           ...updatedOrder,
           tax: updatedOrder.tax.toString(),
           total: updatedOrder.total.toString(),
-          rawTotal: updatedOrder.rawTotal.toString(),
+          sub: updatedOrder.sub.toString(),
         };
       },
       {
         auth: true,
+        detail: {
+          summary: 'Close order',
+          description: 'Mark an open order as closed.',
+          tags: ['Gastro', 'Orders'],
+          security: [{ CookieAuth: [] }],
+        },
         body: t.Object({
           stocks: t.Record(t.String(), t.Integer()),
         }),
@@ -476,4 +487,12 @@ export default () =>
         },
       }
     )
-    .post('/refund', () => {});
+    .post('/refund', () => {}, {
+      auth: true,
+      detail: {
+        summary: 'Refund order',
+        description: 'Refund flow is not implemented (stub endpoint).',
+        tags: ['Gastro', 'Orders'],
+        security: [{ CookieAuth: [] }],
+      },
+    });

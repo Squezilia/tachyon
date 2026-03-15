@@ -5,14 +5,11 @@ import {
   ResponsePaginate,
 } from '@/model';
 import {
-  CategoryPlain,
-  CategoryPlainInputCreate,
-  CategoryPlainInputUpdate,
   TablePlain,
   TablePlainInputCreate,
   TablePlainInputUpdate,
 } from '@database';
-import Elysia, { t } from 'elysia';
+import Elysia from 'elysia';
 import { auth, authMacro } from 'lib/auth';
 import {
   MappedPrismaError,
@@ -25,7 +22,7 @@ import { v7 } from 'uuid';
 export default new Elysia({ prefix: '/tables' })
   .use(authMacro)
   .post(
-    '/create',
+    '/',
     async ({ request: { headers }, status, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
@@ -114,6 +111,13 @@ export default new Elysia({ prefix: '/tables' })
     },
     {
       auth: true,
+      detail: {
+        summary: 'Duplicate table',
+        description:
+          'Create a copy of an existing table within the active organization.',
+        tags: ['Gastro', 'Tables'],
+        security: [{ CookieAuth: [] }],
+      },
       response: {
         ...ResponseSchemaSet,
         201: TablePlain,
@@ -122,7 +126,7 @@ export default new Elysia({ prefix: '/tables' })
     }
   )
   .get(
-    '/get',
+    '/',
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
@@ -183,7 +187,7 @@ export default new Elysia({ prefix: '/tables' })
     }
   )
   .get(
-    '/get/:id',
+    '/:id',
     async ({ session, params, request: { headers }, status }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
@@ -215,6 +219,12 @@ export default new Elysia({ prefix: '/tables' })
     },
     {
       auth: true,
+      detail: {
+        summary: 'Get table',
+        description: 'Retrieve a table by ID.',
+        tags: ['Gastro', 'Tables'],
+        security: [{ CookieAuth: [] }],
+      },
       response: {
         ...ResponseSchemaSet,
         200: TablePlain,
@@ -223,7 +233,7 @@ export default new Elysia({ prefix: '/tables' })
     }
   )
   .patch(
-    '/update/:id',
+    '/:id',
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
@@ -270,7 +280,7 @@ export default new Elysia({ prefix: '/tables' })
     }
   )
   .delete(
-    '/delete/:id',
+    '/:id',
     async ({ request: { headers }, status, params, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);

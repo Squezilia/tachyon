@@ -23,7 +23,7 @@ export default () =>
   new Elysia({ prefix: '/categories' })
     .use(authMacro)
     .post(
-      '/create',
+      '/',
       async ({ request: { headers }, status, body, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -118,6 +118,13 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'Duplicate category',
+          description:
+            'Create a copy of a category, including its applied taxes, within the active organization.',
+          tags: ['Inventory', 'Categories'],
+          security: [{ CookieAuth: [] }],
+        },
         response: {
           ...ResponseSchemaSet,
           201: CategoryPlain,
@@ -126,7 +133,7 @@ export default () =>
       }
     )
     .get(
-      '/get',
+      '/',
       async ({ request: { headers }, status, session, query }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -187,7 +194,7 @@ export default () =>
       }
     )
     .get(
-      '/get/:id',
+      '/:id',
       async ({ session, params, request: { headers }, status }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -219,6 +226,12 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'Get category',
+          description: 'Retrieve a category by ID.',
+          tags: ['Inventory', 'Categories'],
+          security: [{ CookieAuth: [] }],
+        },
         response: {
           ...ResponseSchemaSet,
           200: CategoryPlain,
@@ -227,8 +240,8 @@ export default () =>
       }
     )
     .get(
-      '/get/raw',
-      async ({ session, params, request: { headers }, status }) => {
+      '/raw',
+      async ({ session, request: { headers }, status }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
 
@@ -260,6 +273,13 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'List categories (raw)',
+          description:
+            'Retrieve a lightweight category list (id, name) for the active organization.',
+          tags: ['Inventory', 'Categories'],
+          security: [{ CookieAuth: [] }],
+        },
         response: {
           ...ResponseSchemaSet,
           200: t.Array(
@@ -273,7 +293,7 @@ export default () =>
       }
     )
     .patch(
-      '/update/:id',
+      '/:id',
       async ({ request: { headers }, status, params, body, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -320,7 +340,7 @@ export default () =>
       }
     )
     .delete(
-      '/delete/:id',
+      '/:id',
       async ({ request: { headers }, status, params, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);

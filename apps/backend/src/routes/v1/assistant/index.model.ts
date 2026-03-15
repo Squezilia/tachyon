@@ -1,4 +1,3 @@
-import google from '@backend/lib/ai';
 import { t } from 'elysia';
 
 export const allowedModels = t.Union([

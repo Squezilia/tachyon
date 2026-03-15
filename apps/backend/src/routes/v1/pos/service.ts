@@ -2,7 +2,6 @@ import tr from '@/i18n/tr';
 import { MappedPrismaError } from '@backend/lib/error';
 import { Decimal } from '@database';
 import {
-  CartProduct,
   CartProductTax,
   Prisma,
   Product,
@@ -14,9 +13,6 @@ import { v7 } from 'uuid';
 type Stocks = (Stock & { product: Product & { appliedTaxes: Tax[] } })[];
 type StocksBody = Record<string, number>;
 type ProductWithTax = Product & { appliedTaxes: Tax[] };
-type CartProductWithAppliedTaxes = CartProduct & {
-  appliedTaxes: CartProductTax[];
-};
 
 export default async function calculateTotal(
   organizationId: string,
@@ -28,8 +24,8 @@ export default async function calculateTotal(
   const cartConfig: Prisma.CartProductCreateManyInput[] = [];
   let allTaxes: Prisma.CartProductTaxCreateManyInput[] = [];
   let total = Decimal(0);
-  let rawTotal = Decimal(0);
-  let taxTotal = Decimal(0);
+  let sub = Decimal(0);
+  let tax = Decimal(0);
 
   for (const stock of stocks) {
     const specifiedStockForItem = body[stock.id + ''];
@@ -60,12 +56,12 @@ export default async function calculateTotal(
       appliedTaxes,
       total: productTotal,
       appliedTax,
-      subtotal,
+      productSub,
     } = calculateTax(stock.product, specifiedStockForItem, cartProductId);
 
     total = total.plus(productTotal);
-    rawTotal = rawTotal.plus(subtotal);
-    taxTotal = taxTotal.plus(appliedTax);
+    sub = sub.plus(productSub);
+    tax = tax.plus(appliedTax);
 
     allTaxes = allTaxes.concat(appliedTaxes);
 
@@ -75,8 +71,8 @@ export default async function calculateTotal(
       productId: stock.productId,
       productName: stock.product.name,
       quantity: specifiedStockForItem,
-      totalTax: appliedTax,
-      subtotal,
+      tax: appliedTax,
+      sub: productSub,
       total: productTotal,
       stockId: stock.id,
     });
@@ -87,8 +83,8 @@ export default async function calculateTotal(
     cartConfig,
     appliedTaxes: allTaxes,
     total,
-    rawTotal,
-    taxTotal,
+    sub,
+    tax,
   };
 }
 
@@ -97,16 +93,16 @@ export function calculateTax(
   quantity: number,
   cartProductId: string
 ) {
-  let appliedTaxes: Prisma.CartProductTaxCreateManyInput[] = [];
+  const appliedTaxes: Prisma.CartProductTaxCreateManyInput[] = [];
 
-  const subtotal = product.price.mul(quantity);
+  const productSub = product.price.mul(quantity);
   const taxes = product.appliedTaxes;
 
   let appliedTax = Decimal(0);
-  let runningBase = subtotal;
+  let runningBase = productSub;
 
   for (const tax of taxes) {
-    const baseAmount = tax.isCumulative ? runningBase : subtotal;
+    const baseAmount = tax.isCumulative ? runningBase : productSub;
 
     const taxAmount = tax.isFixed
       ? tax.rate.mul(quantity)
@@ -129,9 +125,9 @@ export function calculateTax(
     if (tax.isCumulative) runningBase = runningBase.plus(taxAmount);
   }
 
-  const total = subtotal.plus(appliedTax);
+  const total = productSub.plus(appliedTax);
 
-  return { appliedTaxes, appliedTax, subtotal, total };
+  return { appliedTaxes, appliedTax, productSub, total };
 }
 
 export function updateTaxes(
@@ -139,15 +135,15 @@ export function updateTaxes(
   price: Decimal,
   quantity: number
 ) {
-  let appliedTaxes: Prisma.CartProductTaxUpdateArgs[] = [];
+  const appliedTaxes: Prisma.CartProductTaxUpdateArgs[] = [];
 
-  const subtotal = price.mul(quantity);
+  const productSub = price.mul(quantity);
 
   let appliedTax = Decimal(0);
-  let runningBase = subtotal;
+  let runningBase = productSub;
 
   for (const tax of taxes) {
-    const baseAmount = tax.isCumulative ? runningBase : subtotal;
+    const baseAmount = tax.isCumulative ? runningBase : productSub;
 
     const taxAmount = tax.isFixed
       ? tax.taxRate.mul(quantity)
@@ -168,7 +164,7 @@ export function updateTaxes(
     if (tax.isCumulative) runningBase = runningBase.plus(taxAmount);
   }
 
-  const total = subtotal.plus(appliedTax);
+  const total = productSub.plus(appliedTax);
 
-  return { appliedTaxes, appliedTax, subtotal, total };
+  return { appliedTaxes, appliedTax, productSub, total };
 }

@@ -24,7 +24,7 @@ export default () =>
       },
     })
     .post(
-      ':id/add',
+      ':id',
       async ({ request: { headers }, session, params, body, status }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -86,7 +86,7 @@ export default () =>
       }
     )
     .delete(
-      ':id/delete/:targetId',
+      ':id/:targetId',
       async ({ request: { headers }, params, status, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);

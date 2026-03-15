@@ -15,7 +15,7 @@ import { SellPlain } from '@database';
 import Elysia from 'elysia';
 
 export default new Elysia({ prefix: '/sells' }).use(authMacro).get(
-  '/get',
+  '/',
   async ({ request: { headers }, status, session, query }) => {
     if (!session.activeOrganizationId)
       return status(400, tr.error.organization.noActive);

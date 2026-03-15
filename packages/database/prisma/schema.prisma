@@ -493,11 +493,11 @@ model Order {
   updatedAt DateTime      @updatedAt
 
   /// @prismabox.typeOverwrite=t.String()
-  rawTotal Decimal
+  sub   Decimal
   /// @prismabox.typeOverwrite=t.String()
-  total    Decimal
+  total Decimal
   /// @prismabox.typeOverwrite=t.String()
-  tax      Decimal
+  tax   Decimal
 
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
@@ -562,9 +562,9 @@ model CartProduct {
   priceAtSale  Decimal
   appliedTaxes CartProductTax[]
   /// @prismabox.typeOverwrite=t.String()
-  subtotal     Decimal // quantity * priceAtSale
+  sub          Decimal // quantity * priceAtSale
   /// @prismabox.typeOverwrite=t.String()
-  totalTax     Decimal // Sum of all appliedTaxes.taxAmount
+  tax          Decimal // Sum of all appliedTaxes.taxAmount
   /// @prismabox.typeOverwrite=t.String()
   total        Decimal // subtotal + totalTax
 

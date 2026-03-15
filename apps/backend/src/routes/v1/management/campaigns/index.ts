@@ -28,7 +28,7 @@ export default () =>
       detail: { tags: ['Campaigns'], security: [{ CookieAuth: [] }] },
     })
     .post(
-      '/create',
+      '/',
       async ({ request: { headers }, status, body, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -76,7 +76,7 @@ export default () =>
       }
     )
     .get(
-      '/get',
+      '/',
       async ({ request: { headers }, status, session, query }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -141,7 +141,7 @@ export default () =>
       }
     )
     .get(
-      '/get/:id',
+      '/:id',
       async ({ request: { headers }, status, params, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -203,7 +203,7 @@ export default () =>
       }
     )
     .patch(
-      '/update/:id',
+      '/:id',
       async ({ request: { headers }, status, params, body, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -255,7 +255,7 @@ export default () =>
       }
     )
     .delete(
-      '/delete/:id',
+      '/:id',
       async ({ request: { headers }, status, params, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);

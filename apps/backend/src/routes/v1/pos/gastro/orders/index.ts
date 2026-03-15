@@ -15,7 +15,7 @@ import { OrderPlain } from '@database';
 import Elysia, { t } from 'elysia';
 
 export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
-  '/get',
+  '/',
   async ({ request: { headers }, status, session, query }) => {
     if (!session.activeOrganizationId)
       return status(400, tr.error.organization.noActive);
@@ -60,7 +60,7 @@ export default new Elysia({ prefix: '/orders' }).use(authMacro).get(
         ...order,
         tax: order.tax.toString(),
         total: order.total.toString(),
-        rawTotal: order.rawTotal.toString(),
+        sub: order.sub.toString(),
       })),
       meta: {
         max: query.max,

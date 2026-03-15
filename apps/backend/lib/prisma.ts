@@ -1,3 +1,3 @@
-import { Prisma } from "@database";
+import { Prisma } from '@database';
 
 export default new Prisma.PrismaClient();

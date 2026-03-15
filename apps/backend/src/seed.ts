@@ -505,7 +505,7 @@ function calculateAppliedTaxes(
 
   return {
     applied,
-    totalTax,
+    tax: totalTax,
     total: subtotal.plus(totalTax),
   };
 }
@@ -558,9 +558,9 @@ async function createCartProductSnapshot(options: {
       .map((taxId) => taxesById.get(taxId))
       .filter((tax): tax is TaxSnapshot => Boolean(tax));
 
-  const subtotal = product.price.mul(decimal(quantity));
-  const { applied, totalTax, total } = calculateAppliedTaxes(
-    subtotal,
+  const sub = product.price.mul(decimal(quantity));
+  const { applied, tax, total } = calculateAppliedTaxes(
+    sub,
     quantity,
     resolvedTaxes
   );
@@ -571,8 +571,8 @@ async function createCartProductSnapshot(options: {
       productId: product.id,
       productName: product.name,
       priceAtSale: product.price,
-      subtotal,
-      totalTax,
+      sub,
+      tax,
       total,
       sellId: sellId ?? null,
       orderId: orderId ?? null,
@@ -600,7 +600,7 @@ async function createCartProductSnapshot(options: {
     });
   }
 
-  return { subtotal, totalTax, total };
+  return { subtotal: sub, tax, total };
 }
 
 async function enrichWithRandomData(params: {
@@ -743,14 +743,14 @@ async function enrichWithRandomData(params: {
         organizationId,
         createdAt: hoursAgo(randomIntInclusive(1, 48)),
         issuerId,
-        rawTotal: 0,
+        sub: 0,
         tax: 0,
         total: 0,
       },
     });
     orders.set(order.id, { id: order.id });
 
-    let rawTotal = Decimal(0);
+    let sub = Decimal(0);
     let total = Decimal(0);
     let tax = Decimal(0);
     const lineCount = randomIntInclusive(1, 3);
@@ -764,7 +764,7 @@ async function enrichWithRandomData(params: {
       const {
         subtotal,
         total: productTotal,
-        totalTax,
+        tax: totalTax,
       } = await createCartProductSnapshot({
         product,
         quantity: randomIntInclusive(1, 4),
@@ -776,7 +776,7 @@ async function enrichWithRandomData(params: {
       });
 
       total = productTotal.plus(total);
-      rawTotal = subtotal.plus(rawTotal);
+      sub = subtotal.plus(sub);
       tax = totalTax.plus(tax);
 
       await prisma.order.update({
@@ -784,7 +784,7 @@ async function enrichWithRandomData(params: {
           id: orderId,
         },
         data: {
-          rawTotal,
+          sub,
           tax,
           total,
         },
@@ -1257,7 +1257,7 @@ async function seed() {
             organizationId: organization.id,
             createdAt,
             issuerId: users.cashier.id,
-            rawTotal: 0,
+            sub: 0,
             tax: 0,
             total: 0,
           },
@@ -1290,7 +1290,11 @@ async function seed() {
         (stock) => stock[1].productId === product.id
       );
 
-      const { subtotal, total, totalTax } = await createCartProductSnapshot({
+      const {
+        subtotal: sub,
+        total,
+        tax,
+      } = await createCartProductSnapshot({
         product,
         quantity: config.quantity,
         sellId,
@@ -1311,11 +1315,11 @@ async function seed() {
             total: {
               increment: total,
             },
-            rawTotal: {
-              increment: subtotal,
+            sub: {
+              increment: sub,
             },
             tax: {
-              increment: totalTax,
+              increment: tax,
             },
           },
         });

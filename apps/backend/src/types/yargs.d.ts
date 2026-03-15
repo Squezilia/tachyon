@@ -14,10 +14,7 @@ declare module 'yargs' {
     parseSync(): TParsed & { _: (string | number)[]; $0: string };
   }
 
-  export default function yargs(
-    args?: readonly string[],
-    cwd?: string
-  ): Argv;
+  export default function yargs(args?: readonly string[], cwd?: string): Argv;
 }
 
 declare module 'yargs/helpers' {

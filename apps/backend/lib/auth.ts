@@ -1,7 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin, twoFactor } from 'better-auth/plugins';
-import Elysia, { StatusMap } from 'elysia';
+import Elysia from 'elysia';
 import organizations from './organizations';
 import prisma from './prisma';
 import { openAPI } from 'better-auth/plugins';
@@ -51,6 +51,7 @@ export const OpenAPI = {
         reference[key] = paths[path];
 
         for (const method of Object.keys(paths[path])) {
+          // eslint-disable-next-line
           const operation = (reference[key] as any)[method];
 
           operation.tags = ['Better Auth'];
@@ -58,6 +59,8 @@ export const OpenAPI = {
       }
 
       return reference;
+      // eslint-disable-next-line
     }) as Promise<any>,
+  // eslint-disable-next-line
   components: getSchema().then(({ components }) => components) as Promise<any>,
 } as const;

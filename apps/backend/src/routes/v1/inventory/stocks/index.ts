@@ -31,7 +31,7 @@ export default () =>
       },
     })
     .post(
-      '/create',
+      '/',
       async ({ request: { headers }, status, body, session }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
@@ -99,7 +99,7 @@ export default () =>
       }
     )
     .get(
-      '/get',
+      '/',
       async ({ request: { headers }, status, session, query }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);

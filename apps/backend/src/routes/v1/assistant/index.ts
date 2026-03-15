@@ -19,7 +19,7 @@ import {
 } from '@backend/lib/error';
 import { v7 } from 'uuid';
 import logger from '@backend/lib/logger';
-import { Chat, ChatPlain, MessagePlain } from '@database';
+import { ChatPlain, MessagePlain } from '@database';
 import { QueryPaginate, ResponsePaginate } from '@/model';
 import tr from '@/i18n/tr';
 import { Prisma } from '@database/generated/prisma/client';
@@ -71,6 +71,13 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'List chats',
+          description:
+            "Retrieve a paginated list of the authenticated user's chats.",
+          tags: ['Assistant', 'Chat'],
+          security: [{ CookieAuth: [] }],
+        },
         query: QueryPaginate(t.Object({})),
         response: { ...ResponseSchemaSet, 200: ResponsePaginate(ChatPlain) },
       }
@@ -89,7 +96,17 @@ export default () =>
 
         return chat;
       },
-      { auth: true, response: { ...ResponseSchemaSet, 200: ChatPlain } }
+      {
+        auth: true,
+        detail: {
+          summary: 'Get chat',
+          description:
+            'Retrieve a single chat by ID (must belong to the authenticated user).',
+          tags: ['Assistant', 'Chat'],
+          security: [{ CookieAuth: [] }],
+        },
+        response: { ...ResponseSchemaSet, 200: ChatPlain },
+      }
     )
     .get(
       '/chat/:id/message',
@@ -132,6 +149,13 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'List chat messages',
+          description:
+            'List messages for a chat using cursor-based pagination (newest first).',
+          tags: ['Assistant', 'Chat'],
+          security: [{ CookieAuth: [] }],
+        },
         query: t.Object({
           cursor: t.Optional(t.String()),
         }),
@@ -167,6 +191,12 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'Create chat',
+          description: 'Create a new chat for the authenticated user.',
+          tags: ['Assistant', 'Chat'],
+          security: [{ CookieAuth: [] }],
+        },
         response: {
           ...ResponseSchemaSet,
           201: ChatPlain,
@@ -286,11 +316,7 @@ export default () =>
                 id: inferenceMessageId,
               },
               data: {
-                content: event.steps
-                  .map((step) => {
-                    step.text;
-                  })
-                  .join(' '),
+                content: event.steps.map((step) => step.text).join(' '),
               },
             });
           },
@@ -311,6 +337,13 @@ export default () =>
       },
       {
         auth: true,
+        detail: {
+          summary: 'Send message',
+          description:
+            'Append a user message to the chat and stream the assistant response; persist the final inference content.',
+          tags: ['Assistant', 'Chat'],
+          security: [{ CookieAuth: [] }],
+        },
         body: ChatMessage,
       }
     );

@@ -1,7 +1,6 @@
 import tr from '@/i18n/tr';
 import { ErrorResponseSchema } from '@/model';
-import { Decimal, SellPlain } from '@database';
-import type { Prisma } from '@database/generated/prisma/client';
+import { SellPlain } from '@database';
 import Elysia, { t } from 'elysia';
 import { auth, authMacro } from 'lib/auth';
 import {
@@ -10,7 +9,6 @@ import {
   ResponseSchemaSet,
 } from 'lib/error';
 import prisma from 'lib/prisma';
-import { v7 } from 'uuid';
 import sells from './sells';
 import calculateTotal from '../service';
 
@@ -23,7 +21,7 @@ export default () =>
     })
     // request (stockList) -> check stocks -> run campaign engine (skip) -> run tax engine -> create stock movements -> create sell -> response (sell)
     .post(
-      '/sell',
+      '/',
       async ({ request: { headers }, body, session, user, status }) => {
         if (!session.activeOrganizationId)
           return status(400, tr.error.organization.noActive);
