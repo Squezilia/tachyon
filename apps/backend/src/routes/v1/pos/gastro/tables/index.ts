@@ -1,3 +1,4 @@
+import { ElysiaApp } from '@/app';
 import tr from '@/i18n/tr';
 import {
   ErrorResponseSchema,
@@ -10,16 +11,16 @@ import {
   TablePlainInputUpdate,
 } from '@database';
 import Elysia from 'elysia';
-import { auth, authMacro } from 'lib/auth';
+import { auth, authMacro } from '@backend/lib/auth';
 import {
   MappedPrismaError,
   mapPrismaError,
   ResponseSchemaSet,
-} from 'lib/error';
-import prisma from 'lib/prisma';
+} from '@backend/lib/error';
+import prisma from '@backend/lib/prisma';
 import { v7 } from 'uuid';
 
-export default new Elysia({ prefix: '/tables' })
+export default new Elysia({ prefix: '/v1/pos/gastro/tables' })
   .use(authMacro)
   .post(
     '/',

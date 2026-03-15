@@ -1,7 +1,7 @@
-import type { App } from '@backend';
+import type { ElysiaApp } from '@backend';
 import { treaty } from '@elysiajs/eden';
 
-const client = treaty<App>('http://localhost:3000', {
+const client = treaty<ElysiaApp>('http://localhost:3000', {
   fetch: {
     credentials: 'include',
   },

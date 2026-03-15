@@ -18,9 +18,8 @@
       "@frontend/*": ["../frontend/app/*"],
       "@backend": ["src/main.ts"],
       "@backend/*": ["./src/*"],
-      "@backend/lib/*": ["../backend/lib/*"],
+      "@backend/lib/*": ["./lib/*"],
 
-      // ÖNEMLİ: src yerine dist'e işaret etsin
       "@database": ["../../packages/database/src/index.ts"],
       "@database/generated/*": ["../../packages/database/src/generated/*"]
     }

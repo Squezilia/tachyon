@@ -6,18 +6,20 @@ import cors from '@elysiajs/cors';
 
 import logger from '../lib/logger';
 import { auth, OpenAPI } from '../lib/auth';
-
-import hospitality from './routes/v1/pos/gastro';
+import { openapi } from '@elysiajs/openapi';
+import assistant from './routes/v1/assistant';
+import gastro from './routes/v1/pos/gastro';
+import tables from './routes/v1/pos/gastro/tables';
+import orders from './routes/v1/pos/gastro/orders';
 import retail from './routes/v1/pos/retail';
+import sells from './routes/v1/pos/retail/sells';
 import taxes from './routes/v1/management/taxes';
+import campaigns from './routes/v1/management/campaigns';
 import target from './routes/v1/management/campaigns/target';
 import availability from './routes/v1/management/campaigns/availability';
-import campaigns from './routes/v1/management/campaigns';
-import categories from './routes/v1/inventory/categories';
-import products from './routes/v1/inventory/products';
 import stocks from './routes/v1/inventory/stocks';
-import assistant from './routes/v1/assistant';
-import { openapi } from '@elysiajs/openapi';
+import products from './routes/v1/inventory/products';
+import categories from './routes/v1/inventory/categories';
 
 export const app = new Elysia()
   .use(wrap(logger))
@@ -69,16 +71,18 @@ export const app = new Elysia()
       tags: ['System'],
     },
   })
-  .group('/v1', (app) =>
-    app
-      .group('/assistant', (app) => app.use(assistant()))
-      .group('/inventory', (app) =>
-        app.use(products()).use(categories()).use(stocks())
-      )
-      .group('/management', (app) =>
-        app.use(taxes()).use(campaigns()).use(availability()).use(target())
-      )
-      .group('/pos', (app) => app.use(retail()).use(hospitality()))
-  );
+  .use(assistant)
+  .use(gastro)
+  .use(tables)
+  .use(orders)
+  .use(retail)
+  .use(sells)
+  .use(taxes)
+  .use(campaigns)
+  .use(target)
+  .use(availability)
+  .use(stocks)
+  .use(products)
+  .use(categories);
 
-export type App = typeof app;
+export type ElysiaApp = typeof app;
