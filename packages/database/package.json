@@ -4,6 +4,12 @@
   "type": "module",
   "main": "src/index.ts",
   "private": true,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

@@ -14,65 +14,63 @@ import prisma from '@backend/lib/prisma';
 import { SellPlain } from '@database';
 import Elysia from 'elysia';
 
-export default new Elysia({ prefix: '/v1/pos/retail/sells' })
-  .use(authMacro)
-  .get(
-    '/',
-    async ({ request: { headers }, status, session, query }) => {
-      if (!session.activeOrganizationId)
-        return status(400, tr.error.organization.noActive);
+export default new Elysia().use(authMacro).get(
+  '/',
+  async ({ request: { headers }, status, session, query }) => {
+    if (!session.activeOrganizationId)
+      return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { sell: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
+    if (
+      !(await auth.api.hasPermission({
+        headers,
+        body: { permissions: { sell: ['view'] } },
+      }))
+    )
+      return status(403, tr.error.organization.insufficentPermission);
 
-      const transaction = await Promise.all([
-        prisma.sell.findMany({
-          take: query.max,
-          skip: query.max * query.page,
-          where: {
-            organizationId: session.activeOrganizationId,
-          },
-        }),
-        prisma.sell.count({
-          where: {
-            organizationId: session.activeOrganizationId,
-          },
-        }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError)
-        return status(transaction.status, transaction.response);
-
-      const [sells, count] = transaction;
-
-      return {
-        data: sells,
-        meta: {
-          max: query.max,
-          page: query.page,
-          total: count,
+    const transaction = await Promise.all([
+      prisma.sell.findMany({
+        take: query.max,
+        skip: query.max * query.page,
+        where: {
+          organizationId: session.activeOrganizationId,
         },
-      };
+      }),
+      prisma.sell.count({
+        where: {
+          organizationId: session.activeOrganizationId,
+        },
+      }),
+    ]).catch(mapPrismaError);
+
+    if (transaction instanceof MappedPrismaError)
+      return status(transaction.status, transaction.response);
+
+    const [sells, count] = transaction;
+
+    return {
+      data: sells,
+      meta: {
+        max: query.max,
+        page: query.page,
+        total: count,
+      },
+    };
+  },
+  {
+    auth: true,
+    detail: {
+      summary: 'List sells',
+      description:
+        'Retrieve a paginated list of sell records for the active organization.',
+      tags: ['Retail', 'Sells'],
+      security: [{ CookieAuth: [] }],
     },
-    {
-      auth: true,
-      detail: {
-        summary: 'List sells',
-        description:
-          'Retrieve a paginated list of sell records for the active organization.',
-        tags: ['Retail', 'Sells'],
-        security: [{ CookieAuth: [] }],
-      },
-      query: PaginationQuery,
-      response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(SellPlain),
-        403: ErrorResponseSchema,
-      },
-    }
-  );
+    query: PaginationQuery,
+    response: {
+      ...ResponseSchemaSet,
+      200: ResponsePaginate(SellPlain),
+      403: ErrorResponseSchema,
+    },
+  }
+);

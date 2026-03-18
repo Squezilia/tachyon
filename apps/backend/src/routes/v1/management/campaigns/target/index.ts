@@ -1,4 +1,3 @@
-import { ElysiaApp } from '@/app';
 import tr from '@/i18n/tr';
 import { ErrorResponseSchema } from '@/model';
 import { CampaignTargetPlain, CampaignTargetPlainInputCreate } from '@database';
@@ -11,7 +10,7 @@ import {
 } from '@backend/lib/error';
 import prisma from '@backend/lib/prisma';
 
-export default new Elysia({ prefix: '/v1/management/campaigns/target' })
+export default new Elysia()
   .use(authMacro)
   .guard({
     auth: true,

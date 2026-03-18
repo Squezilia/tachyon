@@ -1,4 +1,3 @@
-import { ElysiaApp } from '@/app';
 import tr from '@/i18n/tr';
 import {
   ErrorResponseSchema,
@@ -16,7 +15,7 @@ import {
 import prisma from '@backend/lib/prisma';
 import { v7 } from 'uuid';
 
-export default new Elysia({ prefix: '/v1/management/taxes' })
+export default new Elysia()
   .use(authMacro)
   .guard({
     auth: true,

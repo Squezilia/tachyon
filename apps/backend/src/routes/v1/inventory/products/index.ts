@@ -20,15 +20,15 @@ import prisma from '@backend/lib/prisma';
 import { ProductListItem } from './index.model';
 import { v7 } from 'uuid';
 
-export default new Elysia({ prefix: '/v1/inventory/products' })
+export default new Elysia()
   .use(authMacro)
-  // .guard({
-  //   auth: true,
-  //   detail: {
-  //     tags: ['Inventory', 'Products'],
-  //     security: [{ CookieAuth: [] }],
-  //   },
-  // })
+  .guard({
+    auth: true,
+    detail: {
+      tags: ['Inventory', 'Products'],
+      security: [{ CookieAuth: [] }],
+    },
+  })
   .post(
     '/',
     async ({ request: { headers }, status, body, session }) => {

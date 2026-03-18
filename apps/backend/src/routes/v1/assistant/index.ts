@@ -23,7 +23,6 @@ import { ChatPlain, MessagePlain } from '@database';
 import { QueryPaginate, ResponsePaginate } from '@/model';
 import tr from '@/i18n/tr';
 import { Prisma } from '@database/generated/prisma/client';
-import { ElysiaApp } from '@/app';
 
 type AISDKMessage =
   | SystemModelMessage
@@ -31,7 +30,7 @@ type AISDKMessage =
   | AssistantModelMessage
   | ToolModelMessage;
 
-export default new Elysia({ prefix: '/v1/assistant' })
+export default new Elysia()
   .use(authMacro)
   .get(
     '/chat',

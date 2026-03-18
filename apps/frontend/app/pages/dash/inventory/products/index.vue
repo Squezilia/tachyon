@@ -126,13 +126,16 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
 ];
 
 async function fetchProducts(params: { page: number; max: number }) {
-  const { data, error } = await client.v1.inventory.products.get.get({
+  const { data, error } = await client.v1.inventory.products.get({
     query: { page: params.page, max: params.max },
   });
-  if (error)
-    throw new Error(
-      String(error.value?.reason ?? 'Ürünler çekilirken hata yaşandı.')
-    );
+  if ((error && error.status !== 422) || !data) {
+    const reason =
+      error.status !== 422
+        ? error.value.reason
+        : 'Ürünler çekilirken hata yaşandı.';
+    throw new Error(reason);
+  }
   return data;
 }
 </script>

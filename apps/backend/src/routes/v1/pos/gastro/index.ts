@@ -13,7 +13,7 @@ import calculateTotal, { calculateTax, updateTaxes } from '../service';
 import { CartProductTax, Prisma } from '@database/generated/prisma/client';
 import { v7 } from 'uuid';
 
-export default new Elysia({ prefix: '/v1/pos/gastro' })
+export default new Elysia()
   .use(authMacro)
   .post(
     '/',

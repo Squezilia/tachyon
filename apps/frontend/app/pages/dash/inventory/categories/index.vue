@@ -78,7 +78,7 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
           },
           {
             title: 'Sil',
-            action: () =>
+            action: async () => {
               useToastFetch(
                 `/v1/inventory/categories/delete/${a.renderValue()}`,
                 {
@@ -91,7 +91,8 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
                     onResult: () => updateState.value++,
                   },
                 }
-              ),
+              );
+            },
             group: 'danger',
             icon: Trash2,
             type: 'destructive',
@@ -103,13 +104,16 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
 ];
 
 async function fetchCategories(params: { page: number; max: number }) {
-  const { data, error } = await client.v1.inventory.categories.get.get({
+  const { data, error } = await client.v1.inventory.categories.get({
     query: { page: params.page, max: params.max },
   });
-  if (error)
-    throw new Error(
-      String(error.value?.reason ?? 'Kategoriler çekilirken hata yaşandı.')
-    );
+  if ((error && error.status !== 422) || !data) {
+    const reason =
+      error.status !== 422
+        ? error.value.reason
+        : 'Kategoriler çekilirken hata yaşandı.';
+    throw new Error(reason);
+  }
   return data;
 }
 </script>

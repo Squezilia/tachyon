@@ -19,9 +19,8 @@ import {
 } from '@backend/lib/error';
 import prisma from '@backend/lib/prisma';
 import { StockListItem } from './index.model';
-import { ElysiaApp } from '@/app';
 
-export default new Elysia({ prefix: '/v1/inventory/stocks' })
+export default new Elysia()
   .use(authMacro)
   .guard({
     auth: true,

@@ -1,4 +1,3 @@
-import { ElysiaApp } from '@/app';
 import tr from '@/i18n/tr';
 import {
   ErrorResponseSchema,
@@ -20,7 +19,7 @@ import {
 import prisma from '@backend/lib/prisma';
 import { v7 } from 'uuid';
 
-export default new Elysia({ prefix: '/v1/inventory/categories' })
+export default new Elysia()
   .use(authMacro)
   .post(
     '/',
@@ -194,7 +193,7 @@ export default new Elysia({ prefix: '/v1/inventory/categories' })
     }
   )
   .get(
-    '/:id',
+    ':id',
     async ({ session, params, request: { headers }, status }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
@@ -293,7 +292,7 @@ export default new Elysia({ prefix: '/v1/inventory/categories' })
     }
   )
   .patch(
-    '/:id',
+    ':id',
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
@@ -340,7 +339,7 @@ export default new Elysia({ prefix: '/v1/inventory/categories' })
     }
   )
   .delete(
-    '/:id',
+    ':id',
     async ({ request: { headers }, status, params, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);

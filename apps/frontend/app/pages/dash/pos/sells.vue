@@ -89,13 +89,16 @@ const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
 ];
 
 async function fetchSells(params: { page: number; max: number }) {
-  const { data, error } = await client.v1.pos.retail.sells.get.get({
+  const { data, error } = await client.v1.pos.retail.sells.get({
     query: { page: params.page, max: params.max },
   });
-  if (error)
-    throw new Error(
-      String(error.value?.reason ?? 'Satışlar alınırken sorun yaşandı.')
-    );
+  if ((error && error.status !== 422) || !data) {
+    const reason =
+      error.status !== 422
+        ? error.value.reason
+        : 'Satışlar çekilirken hata yaşandı.';
+    throw new Error(reason);
+  }
   return data;
 }
 </script>

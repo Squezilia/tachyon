@@ -25,9 +25,9 @@ export default defineNuxtConfig({
 
         baseUrl: '.',
         paths: {
-          '@backend': ['../../backend/src/app.ts'],
-          '@backend/*': ['../../backend/src/*'],
-          '@backend/lib/*': ['../../backend/lib/*'],
+          '@backend': ['../../backend/dist/src/app.d.ts'],
+          '@backend/*': ['../../backend/dist/src/*'],
+          '@backend/lib/*': ['../../backend/dist/lib/*'],
 
           '@database': ['../../../packages/database/src/index.ts'],
           '@database/*': ['../../../packages/database/src/*'],

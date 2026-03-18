@@ -11,7 +11,7 @@ import {
 import prisma from '@backend/lib/prisma';
 import calculateTotal from '../service';
 
-export default new Elysia({ prefix: '/v1/pos/retail' })
+export default new Elysia()
   .use(authMacro)
   .guard({
     auth: true,

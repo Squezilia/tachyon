@@ -9,8 +9,8 @@
     "composite": true,
     "incremental": true,
 
+    "noEmit": false,
     "declaration": true,
-    "emitDeclarationOnly": true,
     "rootDir": "src",
     "outDir": "dist",
     "baseUrl": "."

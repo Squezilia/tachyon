@@ -71,18 +71,20 @@ export const app = new Elysia()
       tags: ['System'],
     },
   })
-  .use(assistant)
-  .use(gastro)
-  .use(tables)
-  .use(orders)
-  .use(retail)
-  .use(sells)
-  .use(taxes)
-  .use(campaigns)
-  .use(target)
-  .use(availability)
-  .use(stocks)
-  .use(products)
-  .use(categories);
+  .group('/v1/assistant', (app) => app.use(assistant))
+  .group('/v1/pos/gastro', (app) => app.use(gastro))
+  .group('/v1/pos/gastro/tables', (app) => app.use(tables))
+  .group('/v1/pos/gastro/orders', (app) => app.use(orders))
+  .group('/v1/pos/retail', (app) => app.use(retail))
+  .group('/v1/pos/retail/sells', (app) => app.use(sells))
+  .group('/v1/management/taxes', (app) => app.use(taxes))
+  .group('/v1/management/campaigns', (app) => app.use(campaigns))
+  .group('/v1/management/campaigns/target', (app) => app.use(target))
+  .group('/v1/management/campaigns/availability', (app) =>
+    app.use(availability)
+  )
+  .group('/v1/inventory/stocks', (app) => app.use(stocks))
+  .group('/v1/inventory/products', (app) => app.use(products))
+  .group('/v1/inventory/categories', (app) => app.use(categories));
 
 export type ElysiaApp = typeof app;

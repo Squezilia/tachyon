@@ -116,13 +116,16 @@ const columns: ColumnDef<
 ];
 
 async function fetchSells(params: { page: number; max: number }) {
-  const { data, error } = await client.v1.pos.gastro.orders.get.get({
+  const { data, error } = await client.v1.pos.gastro.orders.get({
     query: { page: params.page, max: params.max },
   });
-  if (error)
-    throw new Error(
-      String(error.value?.reason ?? 'Siparişler alınırken sorun yaşandı.')
-    );
+  if ((error && error.status !== 422) || !data) {
+    const reason =
+      error.status !== 422
+        ? error.value.reason
+        : 'Siparişler çekilirken hata yaşandı.';
+    throw new Error(reason);
+  }
   return data;
 }
 </script>

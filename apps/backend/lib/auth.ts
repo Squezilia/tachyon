@@ -17,28 +17,26 @@ export const auth = betterAuth({
   plugins: [admin(), organizations, twoFactor(), openAPI()],
 });
 
-export const authMacro = new Elysia({ name: 'better-auth' })
-  .mount(auth.handler)
-  .macro({
-    auth: {
-      async resolve({ status, request: { headers } }) {
-        const session = await auth.api.getSession({
-          headers,
+export const authMacro = new Elysia({ name: 'better-auth' }).macro({
+  auth: {
+    async resolve({ status, request: { headers } }) {
+      const session = await auth.api.getSession({
+        headers,
+      });
+
+      if (!session)
+        return status(401, {
+          error: 'Oturum Hatası',
+          reason: 'Oturumunuz açık değil.',
         });
 
-        if (!session)
-          return status(401, {
-            error: 'Oturum Hatası',
-            reason: 'Oturumunuz açık değil.',
-          });
-
-        return {
-          user: session.user,
-          session: session.session,
-        };
-      },
+      return {
+        user: session.user,
+        session: session.session,
+      };
     },
-  });
+  },
+});
 
 let _schema: ReturnType<typeof auth.api.generateOpenAPISchema>;
 const getSchema = async () => (_schema ??= auth.api.generateOpenAPISchema());

@@ -59,13 +59,16 @@ const columns: ColumnDef<typeof StockListItem.static, unknown>[] = [
 ];
 
 async function fetchStocks(params: { page: number; max: number }) {
-  const { data, error } = await client.v1.inventory.stocks.get.get({
+  const { data, error } = await client.v1.inventory.stocks.get({
     query: { page: params.page, max: params.max },
   });
-  if (error)
-    throw new Error(
-      String(error.value?.reason ?? 'Stoklar çekilirken hata yaşandı.')
-    );
+  if ((error && error.status !== 422) || !data) {
+    const reason =
+      error.status !== 422
+        ? error.value.reason
+        : 'Stoklar çekilirken hata yaşandı.';
+    throw new Error(reason);
+  }
   return data;
 }
 </script>
