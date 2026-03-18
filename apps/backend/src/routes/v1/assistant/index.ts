@@ -1,7 +1,7 @@
 import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import google from '@backend/lib/ai';
 import { authMacro } from '@backend/lib/auth';
-import prisma from '@backend/lib/prisma';
+import prisma from '@database';
 import {
   AssistantModelMessage,
   generateText,
@@ -19,10 +19,10 @@ import {
 } from '@backend/lib/error';
 import { v7 } from 'uuid';
 import logger from '@backend/lib/logger';
-import { ChatPlain, MessagePlain } from '@database';
+import { ChatPlain, MessagePlain } from '@database/prismabox/barrel';
 import { QueryPaginate, ResponsePaginate } from '@/model';
 import tr from '@/i18n/tr';
-import { Prisma } from '@database/generated/prisma/client';
+import { Prisma } from '@database/prisma';
 
 type AISDKMessage =
   | SystemModelMessage

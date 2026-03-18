@@ -1,16 +1,11 @@
 import tr from '@/i18n/tr';
 import { MappedPrismaError } from '@backend/lib/error';
-import { Decimal } from '@database';
-import {
-  CartProductTax,
-  Prisma,
-  Product,
-  Stock,
-  Tax,
-} from '@database/generated/prisma/client';
+import { CartProductTax, Product, Stock, Tax, Prisma } from '@database/prisma';
 import { v7 } from 'uuid';
 
-type Stocks = (Stock & { product: Product & { appliedTaxes: Tax[] } })[];
+type Stocks = (Stock & {
+  product: Product & { appliedTaxes: Tax[] };
+})[];
 type StocksBody = Record<string, number>;
 type ProductWithTax = Product & { appliedTaxes: Tax[] };
 
@@ -23,9 +18,9 @@ export default async function calculateTotal(
   const movementConfig: Prisma.StockMovementCreateManyInput[] = [];
   const cartConfig: Prisma.CartProductCreateManyInput[] = [];
   let allTaxes: Prisma.CartProductTaxCreateManyInput[] = [];
-  let total = Decimal(0);
-  let sub = Decimal(0);
-  let tax = Decimal(0);
+  let total = Prisma.Decimal(0);
+  let sub = Prisma.Decimal(0);
+  let tax = Prisma.Decimal(0);
 
   for (const stock of stocks) {
     const specifiedStockForItem = body[stock.id + ''];
@@ -98,7 +93,7 @@ export function calculateTax(
   const productSub = product.price.mul(quantity);
   const taxes = product.appliedTaxes;
 
-  let appliedTax = Decimal(0);
+  let appliedTax = Prisma.Decimal(0);
   let runningBase = productSub;
 
   for (const tax of taxes) {
@@ -132,14 +127,14 @@ export function calculateTax(
 
 export function updateTaxes(
   taxes: CartProductTax[],
-  price: Decimal,
+  price: Prisma.Decimal,
   quantity: number
 ) {
   const appliedTaxes: Prisma.CartProductTaxUpdateArgs[] = [];
 
   const productSub = price.mul(quantity);
 
-  let appliedTax = Decimal(0);
+  let appliedTax = Prisma.Decimal(0);
   let runningBase = productSub;
 
   for (const tax of taxes) {

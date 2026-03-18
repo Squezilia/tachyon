@@ -3,7 +3,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin, twoFactor } from 'better-auth/plugins';
 import Elysia from 'elysia';
 import organizations from './organizations';
-import prisma from './prisma';
+import prisma from '@database';
 import { openAPI } from 'better-auth/plugins';
 
 export const auth = betterAuth({

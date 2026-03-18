@@ -3,7 +3,7 @@ import { ErrorResponseSchema } from '@/model';
 import {
   CampaignAvailabilityPlain,
   CampaignAvailabilityPlainInputCreate,
-} from '@database';
+} from '@database/prismabox';
 import Elysia from 'elysia';
 import { auth, authMacro } from '@backend/lib/auth';
 import {
@@ -11,7 +11,7 @@ import {
   mapPrismaError,
   ResponseSchemaSet,
 } from '@backend/lib/error';
-import prisma from '@backend/lib/prisma';
+import prisma from '@database';
 
 export default new Elysia()
   .use(authMacro)

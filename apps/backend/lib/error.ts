@@ -1,4 +1,4 @@
-import { PrismaClientKnownRequestError } from '@database';
+import { Prisma } from '@database/prisma';
 import { ErrorResponseSchema } from '@/model';
 import logger from './logger';
 
@@ -35,7 +35,7 @@ type ErrorResponse = {
 };
 
 export function mapPrismaError(
-  error: PrismaClientKnownRequestError
+  error: Prisma.PrismaClientKnownRequestError
 ): MappedPrismaError {
   switch (error.code) {
     case 'P2000':

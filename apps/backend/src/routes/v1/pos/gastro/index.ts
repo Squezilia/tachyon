@@ -1,8 +1,8 @@
 import Elysia, { t } from 'elysia';
 import { auth, authMacro } from '@backend/lib/auth';
 import tr from '@/i18n/tr';
-import prisma from '@backend/lib/prisma';
-import { Decimal, OrderPlain } from '@database';
+import prisma from '@database';
+import { OrderPlain } from '@database/prismabox';
 import {
   MappedPrismaError,
   mapPrismaError,
@@ -10,7 +10,7 @@ import {
 } from '@backend/lib/error';
 import { ErrorResponseSchema } from '@/model';
 import calculateTotal, { calculateTax, updateTaxes } from '../service';
-import { CartProductTax, Prisma } from '@database/generated/prisma/client';
+import { CartProductTax, Prisma } from '@database/prisma';
 import { v7 } from 'uuid';
 
 export default new Elysia()
@@ -171,9 +171,9 @@ export default new Elysia()
           to: number;
           cartId: string;
           taxes: CartProductTax[];
-          total: Decimal;
-          sub: Decimal;
-          tax: Decimal;
+          total: Prisma.Decimal;
+          sub: Prisma.Decimal;
+          tax: Prisma.Decimal;
         }
       > = {};
 
@@ -230,9 +230,9 @@ export default new Elysia()
             to: newVal,
             cartId: v7(),
             taxes: [],
-            sub: Decimal(0),
-            total: Decimal(0),
-            tax: Decimal(0),
+            sub: Prisma.Decimal(0),
+            total: Prisma.Decimal(0),
+            tax: Prisma.Decimal(0),
           };
           continue;
         }
@@ -269,9 +269,9 @@ export default new Elysia()
       let createdTaxes: Prisma.CartProductTaxCreateManyInput[] = [];
       let updatedTaxes: Prisma.CartProductTaxUpdateArgs[] = [];
 
-      let changeInTotal = Decimal(0);
-      let changeInSub = Decimal(0);
-      let changeInTax = Decimal(0);
+      let changeInTotal = Prisma.Decimal(0);
+      let changeInSub = Prisma.Decimal(0);
+      let changeInTax = Prisma.Decimal(0);
 
       for (const stock of stocks) {
         const diff = diffTable[stock.id];

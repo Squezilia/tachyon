@@ -4,7 +4,11 @@ import {
   PaginationQuery,
   ResponsePaginate,
 } from '@/model';
-import { TaxPlain, TaxPlainInputCreate, TaxPlainInputUpdate } from '@database';
+import {
+  TaxPlain,
+  TaxPlainInputCreate,
+  TaxPlainInputUpdate,
+} from '@database/prismabox';
 import Elysia, { t } from 'elysia';
 import { auth, authMacro } from '@backend/lib/auth';
 import {
@@ -12,7 +16,7 @@ import {
   mapPrismaError,
   ResponseSchemaSet,
 } from '@backend/lib/error';
-import prisma from '@backend/lib/prisma';
+import prisma from '@database';
 import { v7 } from 'uuid';
 
 export default new Elysia()

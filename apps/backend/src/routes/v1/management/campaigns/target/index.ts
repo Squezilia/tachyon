@@ -1,6 +1,9 @@
 import tr from '@/i18n/tr';
 import { ErrorResponseSchema } from '@/model';
-import { CampaignTargetPlain, CampaignTargetPlainInputCreate } from '@database';
+import {
+  CampaignTargetPlain,
+  CampaignTargetPlainInputCreate,
+} from '@database/prismabox';
 import Elysia from 'elysia';
 import { auth, authMacro } from '@backend/lib/auth';
 import {
@@ -8,7 +11,7 @@ import {
   mapPrismaError,
   ResponseSchemaSet,
 } from '@backend/lib/error';
-import prisma from '@backend/lib/prisma';
+import prisma from '@database';
 
 export default new Elysia()
   .use(authMacro)

@@ -14,10 +14,10 @@
     "backend:dev": "bun run --watch apps/backend/src/main.ts",
     "backend:type-watch": "bun x tsc --project apps/backend/tsconfig.json --watch --emitDeclarationOnly --preserveWatchOutput",
     "frontend:dev": "cd apps/frontend && bun run dev",
-    "db:generate": "bunx prisma generate --schema=packages/database/prisma/schema.prisma && bun --cwd=packages/database tsc",
-    "db:push": "bunx prisma db push --schema=packages/database/prisma/schema.prisma",
+    "db:generate": "bunx prisma generate && bun --cwd=packages/database tsc",
+    "db:push": "bunx prisma db push ",
     "db:seed": "bun run apps/backend/src/seed.ts",
-    "db:studio": "bunx prisma studio --schema=packages/database/prisma/schema.prisma",
+    "db:studio": "bunx prisma studio",
     "backend:lint": "cd apps/backend && eslint",
     "frontend:lint": "cd apps/frontend && eslint"
   },

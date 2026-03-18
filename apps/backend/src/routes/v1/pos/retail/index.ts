@@ -1,6 +1,6 @@
 import tr from '@/i18n/tr';
 import { ErrorResponseSchema } from '@/model';
-import { SellPlain } from '@database';
+import { SellPlain } from '@database/prismabox/Sell';
 import Elysia, { t } from 'elysia';
 import { auth, authMacro } from '@backend/lib/auth';
 import {
@@ -8,7 +8,7 @@ import {
   mapPrismaError,
   ResponseSchemaSet,
 } from '@backend/lib/error';
-import prisma from '@backend/lib/prisma';
+import prisma from '@database';
 import calculateTotal from '../service';
 
 export default new Elysia()

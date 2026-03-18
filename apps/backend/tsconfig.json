@@ -21,7 +21,9 @@
       "@backend/lib/*": ["./lib/*"],
 
       "@database": ["../../packages/database/dist"],
-      "@database/generated/*": ["../../packages/database/dist/generated/*"]
+      "@database/*": ["../../packages/database/dist/*"],
+      "@database/prismabox": ["../../packages/database/dist/prismabox/barrel"],
+      "@database/prisma": ["../../packages/database/dist/prisma/client"]
     }
   },
   "references": [{ "path": "../../packages/database" }],

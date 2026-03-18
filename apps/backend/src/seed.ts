@@ -1,4 +1,3 @@
-import { Decimal } from '@prisma/client/runtime/library';
 import {
   adjectives,
   animals,
@@ -8,12 +7,13 @@ import {
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import readline from 'node:readline';
-import prisma from 'lib/prisma';
+import prisma from '@database';
 import { auth } from 'lib/auth';
 import logger from 'lib/logger';
+import { Prisma } from '@database/prisma';
 
-const decimal = (value: Decimal | number | string) =>
-  value instanceof Decimal ? value : new Decimal(value);
+const decimal = (value: Prisma.Decimal | number | string) =>
+  value instanceof Prisma.Decimal ? value : new Prisma.Decimal(value);
 
 type SeedUserConfig = {
   key: 'admin' | 'manager' | 'cashier';
@@ -37,14 +37,14 @@ type TaxSnapshot = {
   id: string;
   name: string;
   priority: number;
-  rate: Decimal;
+  rate: Prisma.Decimal;
   isFixed: boolean;
   isCumulative: boolean;
 };
 type ProductSnapshot = {
   id: string;
   name: string;
-  price: Decimal;
+  price: Prisma.Decimal;
   categoryId: string;
   taxIds: string[];
 };
@@ -477,7 +477,7 @@ async function ensureUser(config: SeedUserConfig) {
 }
 
 function calculateAppliedTaxes(
-  subtotal: Decimal,
+  subtotal: Prisma.Decimal,
   quantity: number,
   taxes: TaxSnapshot[]
 ) {
@@ -486,8 +486,8 @@ function calculateAppliedTaxes(
   const quantityDecimal = decimal(quantity);
   const applied: Array<{
     tax: TaxSnapshot;
-    baseAmount: Decimal;
-    taxAmount: Decimal;
+    baseAmount: Prisma.Decimal;
+    taxAmount: Prisma.Decimal;
   }> = [];
   let totalTax = decimal(0);
 
@@ -750,9 +750,9 @@ async function enrichWithRandomData(params: {
     });
     orders.set(order.id, { id: order.id });
 
-    let sub = Decimal(0);
-    let total = Decimal(0);
-    let tax = Decimal(0);
+    let sub = Prisma.Decimal(0);
+    let total = Prisma.Decimal(0);
+    let tax = Prisma.Decimal(0);
     const lineCount = randomIntInclusive(1, 3);
     for (let line = 0; line < lineCount; line++) {
       const pool = productPool();

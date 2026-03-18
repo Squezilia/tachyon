@@ -1,4 +1,4 @@
-import { ProductPlain, StockPlain } from '@database';
+import { ProductPlain, StockPlain } from '@database/prismabox';
 import { t } from 'elysia';
 
 export const StockListItem = t.Composite([

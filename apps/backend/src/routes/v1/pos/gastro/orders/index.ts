@@ -10,8 +10,8 @@ import {
   mapPrismaError,
   ResponseSchemaSet,
 } from '@backend/lib/error';
-import prisma from '@backend/lib/prisma';
-import { OrderPlain } from '@database';
+import prisma from '@database';
+import { OrderPlain } from '@database/prismabox';
 import Elysia, { t } from 'elysia';
 
 export default new Elysia().use(authMacro).get(

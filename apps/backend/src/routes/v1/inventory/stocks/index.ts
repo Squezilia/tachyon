@@ -9,7 +9,7 @@ import {
   StockMovementPlainInputCreate,
   StockPlain,
   StockPlainInputCreate,
-} from '@database';
+} from '@database/prismabox';
 import Elysia, { t } from 'elysia';
 import { auth, authMacro } from '@backend/lib/auth';
 import {
@@ -17,7 +17,7 @@ import {
   mapPrismaError,
   ResponseSchemaSet,
 } from '@backend/lib/error';
-import prisma from '@backend/lib/prisma';
+import prisma from '@database';
 import { StockListItem } from './index.model';
 
 export default new Elysia()

@@ -6,12 +6,11 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../src/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator prismabox {
@@ -19,7 +18,7 @@ generator prismabox {
   typeboxImportDependencyName = "elysia"
   typeboxImportVariableName   = "t"
   inputModel                  = true
-  output                      = "../src/generated/prismabox"
+  output                      = "../src/prismabox"
 }
 
 // better-auth auto-generative
