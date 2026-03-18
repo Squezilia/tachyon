@@ -1,6 +1,6 @@
-# Tachyon Priority Order
+# Backend / Database Priority Order
 
-Bu doküman, repo içindeki backend, database ve frontend eksiklerini **öncelik sırasına göre** toparlar.
+Bu doküman, repo içindeki backend ve database eksiklerini **öncelik sırasına göre** toparlar.
 
 Önceliklendirme mantığı:
 
@@ -196,111 +196,16 @@ Bu doküman, repo içindeki backend, database ve frontend eksiklerini **öncelik
 
 ---
 
-
-## Frontend özeli detaylı eksikler
-
-Aşağıdaki maddeler, backend/database tarafındaki eksiklerden bağımsız olarak **UI katmanında açıkça yarım kalmış** alanları toplar.
-
-### FE-1) Action wiring birçok ekranda eksik veya yanlış endpoint'e gidiyor
-**Neden önemli?**
-- Campaigns, members, stocks, audit, orders ve sells ekranlarında action callback'lerinin önemli kısmı boş bırakılmış.
-- Products, categories, taxes ve tables listelerinde delete aksiyonları `/delete/:id` benzeri endpoint'lere gidiyor; mevcut backend route yapısı ile bu path'ler uyuşmuyor.
-- Tables ekranında duplicate/delete çağrıları ayrıca `/gastro` prefix'ini de kaçırıyor.
-
-**Etkisi**
-- Kullanıcı action menüsünü görse de işlem fiilen çalışmıyor.
-- Bazı butonlar sessizce başarısız olurken bazıları 404 üretebilir.
-- UI, backend capability varmış gibi görünse de operasyon akışı tamamlanmıyor.
-
-**Önerilen çözüm**
-- Tüm action callback'lerini ekran bazında inventory listesi çıkararak bağla.
-- Frontend route/path kullanımını backend contract ile birebir eşleştir.
-- Özellikle destructive action'lar için smoke test ekle.
-
-### FE-2) Campaigns ve members yönetimi kullanılabilir seviyede değil
-**Neden önemli?**
-- Campaigns ekranı sadece liste gösteriyor; details/duplicate/edit/delete action'larının tamamı boş.
-- Members ekranında tablo kolonları tanımlı olsa da tablo render'ı yorum satırına alınmış.
-- Members kolonlarında da placeholder/accessor tutarsızlıkları var.
-
-**Etkisi**
-- Yönetim panelinin iki önemli bölümü kullanıcıya açık ama fiilen kullanılamıyor.
-- Organization yönetimi ve kampanya operasyonu admin panelinde tamamlanmış hissi vermiyor.
-
-**Önerilen çözüm**
-- Campaign create/edit/detail/delete akışlarını bağla.
-- Members ekranında tabloyu tekrar aktif et ve gerçek organization member API akışını stabilize et.
-- Davranış ve kolon eşleşmelerini yeniden gözden geçir.
-
-### FE-3) Stock ve audit tarafında ileri akışlar eksik
-**Neden önemli?**
-- Stocks ekranında sadece listeleme ve create var; detail/delete boş.
-- Audit ekranında detail, stock'a git ve product'a git action'ları boş.
-- Backend'de restock/drain capability varken frontend'de buna karşılık gelen akış görünmüyor.
-
-**Etkisi**
-- Stok yönetimi günlük operasyon için yarım kalıyor.
-- Audit ekranı sadece pasif bir log listesine dönüşüyor.
-
-**Önerilen çözüm**
-- Stock detail, restock ve drain dialog/sayfalarını ekle.
-- Audit kayıtlarından ilgili stock/product detaya geçiş sağla.
-- Kritik stok aksiyonları için optimistic refresh veya invalidate stratejisi ekle.
-
-### FE-4) POS yönetim ekranlarında placeholder veri ve eksik drill-down var
-**Neden önemli?**
-- Orders ve sells ekranlarında detail/refund action'ları boş.
-- Hücrelerin bazılarında gerçek veri yerine `Payment` veya `Sell` gibi hard-coded değerler gösteriliyor.
-- Orders ekran başlığı bile `Sells` olarak görünüyor.
-- Tables ekranında details boş; bazı aksiyon path'leri de hatalı.
-
-**Etkisi**
-- POS backoffice görünürde mevcut ama operasyonel takip için yetersiz.
-- Kullanıcı hangi kaydın neye ait olduğunu detaylı inceleyemiyor.
-
-**Önerilen çözüm**
-- Sell/order detail drawer ya da sayfalarını ekle.
-- Payment/table/reversal alanlarında gerçek veri bağla.
-- Orders/tables ekran kopyası kaynaklı label ve route hatalarını temizle.
-
-### FE-5) Tamamen boş bırakılmış ekranlar hâlâ navigation içinde görünür durumda
-**Neden önemli?**
-- Analytics aggregated/raw, management general ve user alt sayfaları boş template içeriyor.
-- Navigation ve kullanıcı menüsü bu ekranlara link vermeye devam ediyor.
-
-**Etkisi**
-- Kullanıcı ürünün tamamlanmamış alanlarına doğrudan düşüyor.
-- Ürünün tamamlanmışlık algısı zedeleniyor.
-
-**Önerilen çözüm**
-- Bu sayfaları ya geçici olarak navigation'dan kaldır ya da minimum placeholder + roadmap state göster.
-- Analytics ve user settings için kapsamlı UX backlog'u ayrı başlık olarak planla.
-
-### FE-6) Küçük ama yaygın tamamlanmamışlıklar
-**Neden önemli?**
-- Products, categories ve taxes listelerinde detail action'ları boş.
-- Bazı sayfalarda naming ve copy tutarsızlıkları var.
-
-**Etkisi**
-- Sistem genelinde “yarım kalmış admin panel” hissi oluşturuyor.
-
-**Önerilen çözüm**
-- Tüm listeler için ortak CRUD tamlık checklist'i oluştur.
-- Detail/edit/delete/duplicate akışlarını resource bazlı standartlaştır.
-
----
-
 ## Önerilen uygulama sırası
 
 1. **Stock senkronizasyonunu düzelt**
 2. **Refund domain'ini güvenli hale getir**
 3. **Payment modelini ve API'sini tamamla**
-4. **Frontend action/path contract hatalarını temizle**
-5. **Campaign engine + campaign UI akışını tamamla**
-6. **Stock, audit, order ve sell detail akışlarını uçtan uca bağla**
-7. **Members, general, analytics ve user placeholder ekranlarını toparla**
-8. **Permission / role mismatch'lerini temizle**
-9. **Soft-delete, DB constraint ve migration eksiklerini toparla**
+4. **Permission / role mismatch'lerini temizle**
+5. **Campaign application engine'i POS'a bağla**
+6. **Order / sell detail endpoint'lerini ekle**
+7. **Soft-delete ve audit davranışlarını netleştir**
+8. **DB constraint ve migration eksiklerini toparla**
 
 ---
 
