@@ -11,7 +11,7 @@ import {
 import formatPrice from '~/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/ProductForm.vue';
 import type { ErrorResponseSchema } from '@backend/model';
-import type { ProductPlain } from '@database';
+import type { ProductPlain } from '@database/prismabox';
 
 definePageMeta({
   middleware: ['auth'],

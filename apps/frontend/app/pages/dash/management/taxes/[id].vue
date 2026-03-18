@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import formatPrice from '@/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/TaxForm.vue';
-import type { TaxPlain } from '@database';
+import type { TaxPlain } from '@database/prismabox';
 import type { ErrorResponseSchema } from '@backend/model';
 
 definePageMeta({

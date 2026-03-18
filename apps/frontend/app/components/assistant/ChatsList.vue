@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Chat } from '@database/generated/prisma/client';
-import type { ChatPlain } from '@database';
+import type { Chat } from '@database/prisma';
+import type { ChatPlain } from '@database/prismabox';
 import type { ServerPaginate } from '../DataTable.vue';
 import { ArrowDown, Loader2 } from 'lucide-vue-next';
 

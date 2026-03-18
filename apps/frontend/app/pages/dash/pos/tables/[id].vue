@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import type { FormType } from '~/components/resourceForms/TableForm.vue';
 import type { ErrorResponseSchema } from '@backend/model';
-import type { ProductPlain } from '@database';
+import type { ProductPlain } from '@database/prismabox';
 
 definePageMeta({
   middleware: ['auth'],

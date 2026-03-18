@@ -29,11 +29,12 @@ export default defineNuxtConfig({
           '@backend/*': ['../../backend/dist/src/*'],
           '@backend/lib/*': ['../../backend/dist/lib/*'],
 
-          '@database': ['../../../packages/database/src/index.ts'],
-          '@database/*': ['../../../packages/database/src/*'],
-          '@database/generated/*': [
-            '../../../packages/database/src/generated/*',
+          '@database': ['../../../packages/database/dist'],
+          '@database/*': ['../../../packages/database/dist/*'],
+          '@database/prismabox': [
+            '../../../packages/database/dist/prismabox/barrel',
           ],
+          '@database/prisma': ['../../../packages/database/dist/prisma/client'],
         },
       },
     },

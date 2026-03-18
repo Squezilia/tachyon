@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Eye } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
-import type { StockMovementPlain } from 'database';
-import type { StockMovementReason } from '@database/generated/prisma/enums';
+import type { StockMovementPlain } from '@database/prismabox';
+import type { StockMovementReason } from '@database/prisma';
 
 const auditReasonLocaleMap: Record<StockMovementReason, string> = {
   SALE: 'Satış',
@@ -89,10 +89,13 @@ async function fetchAudit(params: { page: number; max: number }) {
   const { data, error } = await client.v1.inventory.stocks.movements.get({
     query: { page: params.page, max: params.max },
   });
-  if (error)
-    throw new Error(
-      String(error.value?.reason ?? 'Hareketler çekilirken hata yaşandı.')
-    );
+  if ((error && error.status !== 422) || !data) {
+    const reason =
+      error.status !== 422
+        ? error.value.reason
+        : 'Hareketler çekilirken hata yaşandı.';
+    throw new Error(reason);
+  }
   return data;
 }
 </script>

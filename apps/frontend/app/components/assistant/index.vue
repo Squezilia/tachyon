@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { motion } from 'motion-v';
 import type { AssistantMode, AssistantModel } from './InputBox.vue';
-import type { Chat } from '@database/generated/prisma/client';
+import type { Chat } from '@database/prisma';
 import type { ErrorResponseSchema } from '@backend/model';
 import type { allowedModels } from '@backend/routes/v1/assistant/index.model';
 import ChatsList from './ChatsList.vue';
 import InputBox from './InputBox.vue';
 import type { UIChatMessage } from './Chat.vue';
-import type { ChatPlain, MessagePlain } from '@database';
+import type { ChatPlain, MessagePlain } from '@database/prismabox';
 import { ArrowLeft } from 'lucide-vue-next';
 import DetailHeading from '../DetailHeading.vue';
 

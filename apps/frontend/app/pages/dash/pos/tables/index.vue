@@ -14,7 +14,7 @@ import {
 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
-import type { TablePlain } from '@database';
+import type { TablePlain } from '@database/prismabox';
 
 const updateState = ref(0);
 
