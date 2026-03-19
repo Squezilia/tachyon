@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { ColumnDef } from '@tanstack/vue-table';
 import { h } from 'vue';
-import ServerDataTable from '~/components/DataTable.vue';
 import { Button } from '@/components/ui/button';
 import { Copy, Edit3, Eye, Trash2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';

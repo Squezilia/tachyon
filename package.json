@@ -12,7 +12,7 @@
   "private": true,
   "scripts": {
     "backend:dev": "bun run --watch apps/backend/src/main.ts",
-    "backend:type-watch": "bun x tsc --project apps/backend/tsconfig.json --watch --emitDeclarationOnly --preserveWatchOutput",
+    "backend:type-watch": "bun --cwd=apps/backend tsc --watch --emitDeclarationOnly --preserveWatchOutput",
     "frontend:dev": "cd apps/frontend && bun run dev",
     "db:generate": "bunx prisma generate && bun --cwd=packages/database tsc",
     "db:push": "bunx prisma db push ",

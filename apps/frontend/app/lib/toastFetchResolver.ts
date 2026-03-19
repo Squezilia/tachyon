@@ -1,6 +1,5 @@
-import { UseFetchOptions } from '#app';
-import { ErrorResponseSchema } from '@backend/model';
-import {
+import type { ErrorResponseSchema } from '@backend/model';
+import type {
   AvailableRouterMethod,
   NitroFetchOptions,
   NitroFetchRequest,

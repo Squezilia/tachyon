@@ -24,17 +24,16 @@ const values = ref<FormType>({
   price: 0,
 });
 
-const categoryList = await useApi<CategoryOption>(
-  '/v1/inventory/categories/get/raw',
-  {
-    cache: 'no-cache',
-    async onResponseError({ response }) {
-      if (response.ok) return;
-      const body = response._data as typeof ErrorResponseSchema.static;
-      useToast(body.error, { type: 'error' });
-    },
-  }
-);
+const categoryList = await useApi<
+  CategoryOption | typeof ErrorResponseSchema.static
+>('/v1/inventory/categories/get/raw', {
+  cache: 'no-cache',
+  async onResponseError({ response }) {
+    if (response.ok) return;
+    const body = response._data as typeof ErrorResponseSchema.static;
+    useToast(body.error, { type: 'error' });
+  },
+});
 
 function onSubmit(values: FormType) {
   useToastFetch('/v1/inventory/products/create', {
@@ -55,11 +54,13 @@ function onSubmit(values: FormType) {
 }
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Ürün');
-const categoryName = computed(
-  () =>
-    categoryList.data.value?.find((item) => item.id === values.value.categoryId)
-      ?.name
-);
+const categoryName = computed(() => {
+  if (!categoryList.data.value || !Array.isArray(categoryList.data.value))
+    return;
+  return categoryList.data.value?.find(
+    (item) => item.id === values.value.categoryId
+  )?.name;
+});
 </script>
 
 <template>

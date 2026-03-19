@@ -12,7 +12,7 @@ import {
   Eye,
   Trash2,
 } from 'lucide-vue-next';
-import type { CategoryPlain } from 'database';
+import type { CategoryPlain } from '@database/prismabox';
 import toLocaleDate from '~/lib/toLocaleDate';
 import DataTableActions from '~/components/DataTableActions.vue';
 

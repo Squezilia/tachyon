@@ -6,7 +6,7 @@ import client from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Copy, Edit3, Eye, Trash2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
-import type { CampaignPlain } from 'database';
+import type { CampaignPlain } from '@database/prismabox';
 
 const columns: ColumnDef<typeof CampaignPlain.static, unknown>[] = [
   {

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Eye, Undo2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
-import type { SellPlain } from 'database';
+import type { SellPlain } from '@database/prismabox';
 
 const columns: ColumnDef<typeof SellPlain.static, unknown>[] = [
   {

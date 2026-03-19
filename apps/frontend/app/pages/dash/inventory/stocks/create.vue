@@ -24,17 +24,16 @@ const values = ref<FormType>({
   quantity: 0,
 });
 
-const products = await useApi<ProductOption[]>(
-  '/v1/inventory/products/get/raw',
-  {
-    cache: 'no-cache',
-    async onResponseError({ response }) {
-      if (response.ok) return;
-      const body = response._data as typeof ErrorResponseSchema.static;
-      useToast(body.error, { description: body.reason, type: 'error' });
-    },
-  }
-);
+const products = await useApi<
+  ProductOption[] | typeof ErrorResponseSchema.static
+>('/v1/inventory/products/get/raw', {
+  cache: 'no-cache',
+  async onResponseError({ response }) {
+    if (response.ok) return;
+    const body = response._data as typeof ErrorResponseSchema.static;
+    useToast(body.error, { description: body.reason, type: 'error' });
+  },
+});
 
 function onSubmit(values: FormType) {
   useToastFetch('/v1/inventory/stocks/create', {
@@ -56,9 +55,12 @@ function onSubmit(values: FormType) {
   });
 }
 
-const selectedProduct = computed(() =>
-  products.data.value?.find((product) => product.id === values.value.productId)
-);
+const selectedProduct = computed(() => {
+  if (!products.data.value || !Array.isArray(products.data.value)) return;
+  return products.data.value?.find(
+    (product) => product.id === values.value.productId
+  );
+});
 </script>
 
 <template>

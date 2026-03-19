@@ -23,6 +23,7 @@ import {
   FieldTitle,
 } from '~/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
+import type { AcceptableValue } from 'reka-ui';
 
 definePageMeta({
   middleware: ['auth'],
@@ -77,7 +78,7 @@ const existingOrganizationCount = computed(() =>
   Array.isArray(organizations.value.data) ? organizations.value.data.length : 0
 );
 
-const updateOrganizationPlan = (value: string) => {
+const updateOrganizationPlan = (value: AcceptableValue) => {
   if (value === 'basic' || value === 'extended') {
     organizationPlan.value = value;
   }

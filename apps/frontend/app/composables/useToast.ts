@@ -1,4 +1,5 @@
-import { toast, ExternalToast } from 'vue-sonner';
+import type { ExternalToast } from 'vue-sonner';
+import { toast } from 'vue-sonner';
 
 export default async function useToast(
   title: string,

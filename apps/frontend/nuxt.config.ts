@@ -40,12 +40,6 @@ export default defineNuxtConfig({
     },
   },
 
-  runtimeConfig: {
-    app: {
-      apiBaseUrl: 'http://localhost:3000',
-    },
-  },
-
   app: {
     head: {
       htmlAttrs: {

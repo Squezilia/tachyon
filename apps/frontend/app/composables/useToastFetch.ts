@@ -1,9 +1,9 @@
-import {
+import type {
   NitroFetchOptions,
   NitroFetchRequest,
   AvailableRouterMethod,
 } from 'nitropack/types';
-import { RouteLocationAsString } from 'vue-router';
+import type { RouteLocationAsString } from 'vue-router';
 import { toast } from 'vue-sonner';
 import toastFetchResolver from '~/lib/toastFetchResolver';
 

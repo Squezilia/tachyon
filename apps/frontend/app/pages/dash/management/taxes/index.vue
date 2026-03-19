@@ -6,7 +6,7 @@ import client from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Copy, Edit3, Eye, Trash2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
-import type { TaxPlain } from 'database';
+import type { TaxPlain } from '@database/prismabox';
 
 const updateState = ref(0);
 
