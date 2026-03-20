@@ -1,27 +1,21 @@
 import tr from '@/i18n/tr';
+import Elysia, { ElysiaCustomStatusResponse } from 'elysia';
+import { authMacro } from '@backend/lib/auth';
 import {
-  ErrorResponseSchema,
-  PaginationQuery,
-  ResponsePaginate,
-} from '@/model';
-import {
-  ProductPlain,
-  ProductPlainInputCreate,
-  ProductPlainInputUpdate,
-} from '@database/prismabox';
-import Elysia, { t } from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
-import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
-import { ProductListItem } from './index.model';
+import model from './model';
 import { v7 } from 'uuid';
+import globals from '@/globals';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .guard({
     auth: true,
     detail: {
@@ -37,21 +31,15 @@ export default new Elysia()
 
       const { categoryId, ...productData } = body;
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { product: ['create'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       // Ensure category belongs to the active organization
-      const category = await prisma.category.findFirst({
-        where: {
-          id: categoryId,
-          organizationId: session.activeOrganizationId,
-        },
-      });
+      const category = await prisma.category
+        .findFirst({
+          where: {
+            id: categoryId,
+            organizationId: session.activeOrganizationId,
+          },
+        })
+        .catch(InterceptPrismaError);
 
       if (!category) return status(404, tr.error.category.notFound);
 
@@ -63,11 +51,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdProduct instanceof MappedPrismaError) {
-        return status(createdProduct.status, createdProduct.response);
-      }
+        .catch(InterceptPrismaError);
 
       return status(201, {
         ...createdProduct,
@@ -76,6 +60,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { product: ['create'] },
       detail: {
         summary: 'Create product',
         description:
@@ -83,16 +68,11 @@ export default new Elysia()
         tags: ['Inventory', 'Products'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Composite([
-        ProductPlainInputCreate,
-        t.Object({
-          categoryId: t.String(),
-        }),
-      ]),
+      body: 'productCreate',
       response: {
-        ...ResponseSchemaSet,
-        201: ProductPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        201: 'product',
+        403: 'error',
       },
     }
   )
@@ -101,14 +81,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, params: { id } }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { product: ['create', 'update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const product = await prisma.product
         .findFirst({
@@ -120,10 +92,7 @@ export default new Elysia()
             appliedTaxes: true,
           },
         })
-        .catch(mapPrismaError);
-
-      if (product instanceof MappedPrismaError)
-        return status(product.status, product.response);
+        .catch(InterceptPrismaError);
 
       if (!product) return status(404, tr.error.product.notFound);
 
@@ -140,10 +109,7 @@ export default new Elysia()
             id: v7(),
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdProduct instanceof MappedPrismaError)
-        return status(createdProduct.status, createdProduct.response);
+        .catch(InterceptPrismaError);
 
       return status(201, {
         ...createdProduct,
@@ -152,6 +118,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { product: ['create', 'update'] },
       detail: {
         summary: 'Duplicate product',
         description:
@@ -160,9 +127,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        201: ProductPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        201: 'product',
+        403: 'error',
       },
     }
   )
@@ -171,14 +138,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { product: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await Promise.all([
         prisma.product.findMany({
@@ -196,11 +155,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [products, count] = transaction;
 
@@ -220,6 +175,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { product: ['view'] },
       detail: {
         summary: 'List products',
         description:
@@ -227,11 +183,11 @@ export default new Elysia()
         tags: ['Inventory', 'Products'],
         security: [{ CookieAuth: [] }],
       },
-      query: PaginationQuery,
+      query: 'paginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(ProductListItem),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'paginatedProduct',
+        403: 'error',
       },
     }
   )
@@ -241,14 +197,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { product: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const product = await prisma.product
         .findFirst({
           where: {
@@ -256,11 +204,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (product instanceof MappedPrismaError) {
-        return status(product.status, product.response);
-      }
+        .catch(InterceptPrismaError);
 
       if (!product) return status(404, tr.error.product.notFound);
 
@@ -271,6 +215,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { product: ['view'] },
       detail: {
         summary: 'Get product',
         description: 'Retrieve a product by ID.',
@@ -278,9 +223,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: ProductPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'product',
+        403: 'error',
       },
     }
   )
@@ -289,14 +234,6 @@ export default new Elysia()
     async ({ session, request: { headers }, status }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { product: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const product = await prisma.product
         .findMany({
@@ -309,11 +246,7 @@ export default new Elysia()
             price: true,
           },
         })
-        .catch(mapPrismaError);
-
-      if (product instanceof MappedPrismaError) {
-        return status(product.status, product.response);
-      }
+        .catch(InterceptPrismaError);
 
       return product.map((v) => {
         return {
@@ -324,6 +257,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { product: ['view'] },
       detail: {
         summary: 'List products (raw)',
         description:
@@ -332,15 +266,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: t.Array(
-          t.Object({
-            name: t.String(),
-            id: t.String(),
-            price: t.String(),
-          })
-        ),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'productListRaw',
+        403: 'error',
       },
     }
   )
@@ -349,14 +277,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { product: ['delete'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const updatedProduct = await prisma.product
         .update({
@@ -368,10 +288,7 @@ export default new Elysia()
             ...body,
           },
         })
-        .catch(mapPrismaError);
-
-      if (updatedProduct instanceof MappedPrismaError)
-        return status(updatedProduct.status, updatedProduct.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...updatedProduct,
@@ -380,20 +297,18 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { product: ['update'] },
       detail: {
         summary: 'Update product',
         description: 'Update product fields by ID.',
         tags: ['Inventory', 'Products'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Composite([
-        ProductPlainInputUpdate,
-        t.Object({ categoryId: t.Optional(t.String()) }),
-      ]),
+      body: 'productUpdate',
       response: {
-        ...ResponseSchemaSet,
-        200: ProductPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'product',
+        403: 'error',
       },
     }
   )
@@ -403,14 +318,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { product: ['update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const deletedProduct = await prisma.product
         .delete({
           where: {
@@ -418,10 +325,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (deletedProduct instanceof MappedPrismaError)
-        return status(deletedProduct.status, deletedProduct.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...deletedProduct,
@@ -430,6 +334,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { product: ['delete'] },
       detail: {
         summary: 'Delete product',
         description: 'Delete a product by ID.',
@@ -437,9 +342,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: ProductPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'product',
+        403: 'error',
       },
     }
   );

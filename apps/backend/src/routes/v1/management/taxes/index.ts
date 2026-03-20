@@ -1,26 +1,21 @@
 import tr from '@/i18n/tr';
+import globals from '@/globals';
+import Elysia from 'elysia';
+import { authMacro } from '@backend/lib/auth';
 import {
-  ErrorResponseSchema,
-  PaginationQuery,
-  ResponsePaginate,
-} from '@/model';
-import {
-  TaxPlain,
-  TaxPlainInputCreate,
-  TaxPlainInputUpdate,
-} from '@database/prismabox';
-import Elysia, { t } from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
-import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
 import { v7 } from 'uuid';
+import model from './model';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .guard({
     auth: true,
     detail: {
@@ -34,14 +29,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { tax: ['create'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const createdTax = await prisma.tax
         .create({
           data: {
@@ -49,11 +36,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdTax instanceof MappedPrismaError) {
-        return status(createdTax.status, createdTax.response);
-      }
+        .catch(InterceptPrismaError);
 
       return status(201, {
         ...createdTax,
@@ -62,17 +45,18 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { tax: ['create'] },
       detail: {
         summary: 'Create tax',
         description: 'Create a new tax rule for the organization.',
         tags: ['Inventory', 'Taxes'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Intersect([TaxPlainInputCreate]),
+      body: 'createTax',
       response: {
-        ...ResponseSchemaSet,
-        201: TaxPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        201: 'tax',
+        403: 'error',
       },
     }
   )
@@ -82,14 +66,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { tax: ['create', 'update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const tax = await prisma.tax
         .findFirst({
           where: {
@@ -97,10 +73,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (tax instanceof MappedPrismaError)
-        return status(tax.status, tax.response);
+        .catch(InterceptPrismaError);
 
       if (!tax) return status(404, tr.error.tax.notFound);
 
@@ -112,10 +85,7 @@ export default new Elysia()
             id: v7(),
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdTax instanceof MappedPrismaError)
-        return status(createdTax.status, createdTax.response);
+        .catch(InterceptPrismaError);
 
       return status(201, {
         ...createdTax,
@@ -124,6 +94,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { tax: ['create', 'update'] },
       detail: {
         summary: 'Duplicate tax',
         description:
@@ -132,9 +103,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        201: TaxPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        201: 'tax',
+        403: 'error',
       },
     }
   )
@@ -143,14 +114,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { tax: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await Promise.all([
         prisma.tax.findMany({
@@ -165,11 +128,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [taxes, count] = transaction;
 
@@ -189,17 +148,18 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { tax: ['view'] },
       detail: {
         summary: 'List taxes',
         description: 'Retrieve a paginated list of defined taxes.',
         tags: ['Inventory', 'Taxes'],
         security: [{ CookieAuth: [] }],
       },
-      query: PaginationQuery,
+      query: 'paginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(TaxPlain),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'taxPaginated',
+        403: 'error',
       },
     }
   )
@@ -209,14 +169,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { tax: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const tax = await prisma.tax
         .findFirst({
           where: {
@@ -224,11 +176,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (tax instanceof MappedPrismaError) {
-        return status(tax.status, tax.response);
-      }
+        .catch(InterceptPrismaError);
 
       if (!tax) return status(404, tr.error.tax.notFound);
 
@@ -239,6 +187,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { tax: ['view'] },
       detail: {
         summary: 'Get tax',
         description: 'Retrieve a tax rule by ID.',
@@ -246,9 +195,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: TaxPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'tax',
+        403: 'error',
       },
     }
   )
@@ -257,14 +206,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { tax: ['delete'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const updatedTax = await prisma.tax
         .update({
@@ -276,10 +217,7 @@ export default new Elysia()
             ...body,
           },
         })
-        .catch(mapPrismaError);
-
-      if (updatedTax instanceof MappedPrismaError)
-        return status(updatedTax.status, updatedTax.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...updatedTax,
@@ -288,17 +226,18 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { tax: ['update'] },
       detail: {
         summary: 'Update tax',
         description: 'Update a tax rule by ID.',
         tags: ['Inventory', 'Taxes'],
         security: [{ CookieAuth: [] }],
       },
-      body: TaxPlainInputUpdate,
+      body: 'updateTax',
       response: {
-        ...ResponseSchemaSet,
-        200: TaxPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'tax',
+        403: 'error',
       },
     }
   )
@@ -308,14 +247,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { tax: ['update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const deletedTax = await prisma.tax
         .delete({
           where: {
@@ -323,10 +254,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (deletedTax instanceof MappedPrismaError)
-        return status(deletedTax.status, deletedTax.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...deletedTax,
@@ -335,6 +263,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { tax: ['delete'] },
       detail: {
         summary: 'Delete tax',
         description: 'Delete a tax rule by ID.',
@@ -342,9 +271,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: TaxPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'tax',
+        403: 'error',
       },
     }
   );

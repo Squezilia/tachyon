@@ -1,39 +1,26 @@
 import tr from '@/i18n/tr';
+import Elysia, { ElysiaCustomStatusResponse } from 'elysia';
+import { authMacro } from '@backend/lib/auth';
 import {
-  ErrorResponseSchema,
-  PaginationQuery,
-  ResponsePaginate,
-} from '@/model';
-import {
-  CategoryPlain,
-  CategoryPlainInputCreate,
-  CategoryPlainInputUpdate,
-} from '@database/prismabox';
-import Elysia, { t } from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
-import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
 import { v7 } from 'uuid';
+import model from './model';
+import globals from '@/globals';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .post(
     '/',
     async ({ request: { headers }, status, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { category: ['create'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const createdCategory = await prisma.category
         .create({
@@ -42,27 +29,23 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdCategory instanceof MappedPrismaError) {
-        return status(createdCategory.status, createdCategory.response);
-      }
+        .catch(InterceptPrismaError);
 
       return status(201, createdCategory);
     },
     {
       auth: true,
+      permissions: { category: ['create'] },
       detail: {
         summary: 'Create category',
         description: 'Create a new category within the active organization.',
         tags: ['Inventory', 'Categories'],
         security: [{ CookieAuth: [] }],
       },
-      body: CategoryPlainInputCreate,
+      body: 'categoryCreate',
       response: {
-        ...ResponseSchemaSet,
-        201: CategoryPlain,
-        403: ErrorResponseSchema,
+        201: 'category',
+        400: 'error',
       },
     }
   )
@@ -71,14 +54,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, params: { id } }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { category: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const category = await prisma.category
         .findFirst({
@@ -90,10 +65,7 @@ export default new Elysia()
             appliedTaxes: true,
           },
         })
-        .catch(mapPrismaError);
-
-      if (category instanceof MappedPrismaError)
-        return status(category.status, category.response);
+        .catch(InterceptPrismaError);
 
       if (!category) return status(404, tr.error.category.notFound);
 
@@ -108,15 +80,13 @@ export default new Elysia()
             id: v7(),
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdCategory instanceof MappedPrismaError)
-        return status(createdCategory.status, createdCategory.response);
+        .catch(InterceptPrismaError);
 
       return status(201, createdCategory);
     },
     {
       auth: true,
+      permissions: { category: ['create'] },
       detail: {
         summary: 'Duplicate category',
         description:
@@ -125,9 +95,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        201: CategoryPlain,
-        403: ErrorResponseSchema,
+        201: 'category',
+        400: 'error',
+        404: 'error',
       },
     }
   )
@@ -136,14 +106,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { category: ['create', 'update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await Promise.all([
         prisma.category.findMany({
@@ -158,11 +120,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [categories, count] = transaction;
 
@@ -177,6 +135,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { category: ['view'] },
       detail: {
         summary: 'List categories',
         description:
@@ -184,11 +143,10 @@ export default new Elysia()
         tags: ['Inventory', 'Categories'],
         security: [{ CookieAuth: [] }],
       },
-      query: PaginationQuery,
+      query: 'paginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(CategoryPlain),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'categoryPaginated',
       },
     }
   )
@@ -198,14 +156,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { category: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const category = await prisma.category
         .findFirst({
           where: {
@@ -213,11 +163,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (category instanceof MappedPrismaError) {
-        return status(category.status, category.response);
-      }
+        .catch(InterceptPrismaError);
 
       if (!category) return status(404, tr.error.category.notFound);
 
@@ -225,6 +171,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { category: ['view'] },
       detail: {
         summary: 'Get category',
         description: 'Retrieve a category by ID.',
@@ -232,9 +179,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: CategoryPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'category',
+        403: 'error',
       },
     }
   )
@@ -243,14 +190,6 @@ export default new Elysia()
     async ({ session, request: { headers }, status }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { category: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const category = await prisma.category
         .findMany({
@@ -262,16 +201,13 @@ export default new Elysia()
             id: true,
           },
         })
-        .catch(mapPrismaError);
-
-      if (category instanceof MappedPrismaError) {
-        return status(category.status, category.response);
-      }
+        .catch(InterceptPrismaError);
 
       return category;
     },
     {
       auth: true,
+      permissions: { category: ['view'] },
       detail: {
         summary: 'List categories (raw)',
         description:
@@ -280,14 +216,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: t.Array(
-          t.Object({
-            name: t.String(),
-            id: t.String(),
-          })
-        ),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'categoryRawList',
+        403: 'error',
       },
     }
   )
@@ -296,14 +227,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { category: ['delete'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const updatedCategory = await prisma.category
         .update({
@@ -315,26 +238,24 @@ export default new Elysia()
             ...body,
           },
         })
-        .catch(mapPrismaError);
-
-      if (updatedCategory instanceof MappedPrismaError)
-        return status(updatedCategory.status, updatedCategory.response);
+        .catch(InterceptPrismaError);
 
       return updatedCategory;
     },
     {
       auth: true,
+      permissions: { category: ['update'] },
       detail: {
         summary: 'Update category',
         description: 'Update a category by ID.',
         tags: ['Inventory', 'Categories'],
         security: [{ CookieAuth: [] }],
       },
-      body: CategoryPlainInputUpdate,
+      body: 'categoryUpdate',
       response: {
-        ...ResponseSchemaSet,
-        200: CategoryPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'category',
+        403: 'error',
       },
     }
   )
@@ -344,14 +265,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { category: ['update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const deletedCategory = await prisma.category
         .delete({
           where: {
@@ -359,15 +272,13 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (deletedCategory instanceof MappedPrismaError)
-        return status(deletedCategory.status, deletedCategory.response);
+        .catch(InterceptPrismaError);
 
       return deletedCategory;
     },
     {
       auth: true,
+      permissions: { category: ['delete'] },
       detail: {
         summary: 'Delete category',
         description: 'Delete a category by ID.',
@@ -375,9 +286,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: CategoryPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'category',
+        403: 'error',
       },
     }
   );

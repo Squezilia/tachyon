@@ -11,7 +11,8 @@
   },
   "private": true,
   "scripts": {
-    "backend:dev": "bun run --watch apps/backend/src/main.ts",
+    "backend:dev": "conc --names SRV,TSC -c blue,cyan 'bun run backend:serve' 'bun run backend:type-watch'",
+    "backend:serve": "bun run --watch apps/backend/src/main.ts",
     "backend:type-watch": "bun --cwd=apps/backend tsc --watch --emitDeclarationOnly --preserveWatchOutput",
     "frontend:dev": "cd apps/frontend && bun run dev",
     "db:generate": "bunx prisma generate && bun --cwd=packages/database tsc",

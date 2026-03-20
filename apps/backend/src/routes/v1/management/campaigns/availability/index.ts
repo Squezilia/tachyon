@@ -1,20 +1,20 @@
 import tr from '@/i18n/tr';
-import { ErrorResponseSchema } from '@/model';
-import {
-  CampaignAvailabilityPlain,
-  CampaignAvailabilityPlainInputCreate,
-} from '@database/prismabox';
+import globals from '@/globals';
 import Elysia from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
+import { authMacro } from '@backend/lib/auth';
 import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
+import model from './model';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .guard({
     auth: true,
     detail: {
@@ -24,31 +24,21 @@ export default new Elysia()
   })
   .post(
     ':id',
-    async ({ request: { headers }, session, params, body, status }) => {
+    async ({ session, params, body, status }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { campaign: ['update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       // Ensure campaign belongs to the active organization
-      const campaign = await prisma.campaign.findFirst({
-        where: {
-          id: params.id,
-          organizationId: session.activeOrganizationId,
-        },
-      });
+      const campaign = await prisma.campaign
+        .findFirst({
+          where: {
+            id: params.id,
+            organizationId: session.activeOrganizationId,
+          },
+        })
+        .catch(InterceptPrismaError);
 
-      if (!campaign)
-        return status(404, {
-          error: 'Not Found',
-          reason: 'Campaign not found in the active organization.',
-        });
+      if (!campaign) return status(404, tr.error.campaign.notFound);
 
       const createdAvailability = await prisma.campaignAvailability
         .create({
@@ -57,27 +47,24 @@ export default new Elysia()
             campaignId: params.id,
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdAvailability instanceof MappedPrismaError) {
-        return status(createdAvailability.status, createdAvailability.response);
-      }
+        .catch(InterceptPrismaError);
 
       return createdAvailability;
     },
     {
       auth: true,
+      permissions: { campaign: ['update'] },
       detail: {
         summary: 'Add availability',
         description: 'Attach an availability rule to a campaign.',
         tags: ['Campaigns', 'Availability'],
         security: [{ CookieAuth: [] }],
       },
-      body: CampaignAvailabilityPlainInputCreate,
+      body: 'createAvailability',
       response: {
-        ...ResponseSchemaSet,
-        200: CampaignAvailabilityPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'availability',
+        403: 'error',
       },
     }
   )
@@ -86,14 +73,6 @@ export default new Elysia()
     async ({ request: { headers }, params, status, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { campaign: ['delete'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const deletedCampaignAvailability = await prisma.campaignAvailability
         .delete({
@@ -105,19 +84,13 @@ export default new Elysia()
             },
           },
         })
-        .catch(mapPrismaError);
-
-      if (deletedCampaignAvailability instanceof MappedPrismaError) {
-        return status(
-          deletedCampaignAvailability.status,
-          deletedCampaignAvailability.response
-        );
-      }
+        .catch(InterceptPrismaError);
 
       return deletedCampaignAvailability;
     },
     {
       auth: true,
+      permissions: { campaign: ['delete'] },
       detail: {
         summary: 'Remove availability',
         description: 'Remove an availability rule from a campaign.',
@@ -125,9 +98,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: CampaignAvailabilityPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'availability',
+        403: 'error',
       },
     }
   );

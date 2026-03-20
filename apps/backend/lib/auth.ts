@@ -1,10 +1,25 @@
-import { betterAuth } from 'better-auth';
+import { betterAuth } from 'better-auth/minimal';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { admin, twoFactor } from 'better-auth/plugins';
-import Elysia from 'elysia';
-import organizations from './organizations';
+import { organization } from 'better-auth/plugins';
+import Elysia, { status } from 'elysia';
+import {
+  ac,
+  accountant,
+  manager,
+  owner,
+  staff,
+  admin as adminRole,
+  statement,
+} from './organizations';
 import prisma from '@database';
 import { openAPI } from 'better-auth/plugins';
+import tr from '@/i18n/tr';
+
+type InferPermissionsFromStatement<
+  T extends Record<Readonly<string>, Readonly<string[]>>,
+> = {
+  [k in keyof T]: T[k][number][] | undefined;
+};
 
 export const auth = betterAuth({
   trustedOrigins: ['http://localhost:8080/', '*'],
@@ -14,7 +29,21 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
-  plugins: [admin(), organizations, twoFactor(), openAPI()],
+  plugins: [
+    // admin(),
+    organization({
+      ac,
+      roles: {
+        adminRole,
+        owner,
+        manager,
+        staff,
+        accountant,
+      },
+    }),
+    // twoFactor(),
+    openAPI(),
+  ],
 });
 
 export const authMacro = new Elysia({ name: 'better-auth' }).macro({
@@ -35,6 +64,21 @@ export const authMacro = new Elysia({ name: 'better-auth' }).macro({
         session: session.session,
       };
     },
+  },
+  permissions: (
+    permissions: Partial<InferPermissionsFromStatement<typeof statement>>
+  ) => {
+    return {
+      beforeHandle: async ({ request: { headers }, set }) => {
+        if (
+          !(await auth.api.hasPermission({
+            headers,
+            body: { permissions },
+          }))
+        )
+          throw status(403, tr.error.organization.insufficentPermission);
+      },
+    };
   },
 });
 

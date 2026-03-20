@@ -1,5 +1,5 @@
 import tr from '@/i18n/tr';
-import { MappedPrismaError } from '@backend/lib/error';
+import { PrismaFlowError } from '@backend/lib/error';
 import { CartProductTax, Product, Stock, Tax, Prisma } from '@database/prisma';
 import { v7 } from 'uuid';
 
@@ -30,7 +30,7 @@ export default async function calculateTotal(
       specifiedStockForItem < 1 ||
       specifiedStockForItem == null
     )
-      throw new MappedPrismaError({
+      throw new PrismaFlowError({
         status: 400,
         error: tr.error.retail.stockError.error,
         reason: tr.error.retail.stockError.reason,

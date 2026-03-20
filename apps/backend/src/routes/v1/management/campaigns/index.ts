@@ -1,27 +1,20 @@
 import tr from '@/i18n/tr';
+import globals from '@/globals';
+import Elysia from 'elysia';
+import { authMacro } from '@backend/lib/auth';
 import {
-  ErrorResponseSchema,
-  PaginationQuery,
-  ResponsePaginate,
-} from '@/model';
-import {
-  CampaignAvailabilityPlain,
-  CampaignPlain,
-  CampaignPlainInputCreate,
-  CampaignPlainInputUpdate,
-  CampaignTargetPlain,
-} from '@database/prismabox';
-import Elysia, { t } from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
-import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
+import model from './model';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .guard({
     auth: true,
     detail: { tags: ['Campaigns'], security: [{ CookieAuth: [] }] },
@@ -32,14 +25,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { campaign: ['create'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const createdCampaign = await prisma.campaign
         .create({
           data: {
@@ -47,11 +32,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdCampaign instanceof MappedPrismaError) {
-        return status(createdCampaign.status, createdCampaign.response);
-      }
+        .catch(InterceptPrismaError);
 
       return {
         ...createdCampaign,
@@ -60,17 +41,18 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { campaign: ['create'] },
       detail: {
         summary: 'Create campaign',
         description: 'Create a new marketing campaign.',
         tags: ['Campaigns'],
         security: [{ CookieAuth: [] }],
       },
-      body: CampaignPlainInputCreate,
+      body: 'createCampaign',
       response: {
-        ...ResponseSchemaSet,
-        200: CampaignPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'campaign',
+        403: 'error',
       },
     }
   )
@@ -79,14 +61,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { campaign: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await Promise.all([
         prisma.campaign.findMany({
@@ -101,11 +75,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [campaigns, count] = transaction;
 
@@ -125,17 +95,18 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { campaign: ['view'] },
       detail: {
         summary: 'List campaigns',
         description: 'Retrieve a paginated list of campaigns.',
         tags: ['Campaigns'],
         security: [{ CookieAuth: [] }],
       },
-      query: PaginationQuery,
+      query: 'paginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(CampaignPlain),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'campaignPaginated',
+        403: 'error',
       },
     }
   )
@@ -144,14 +115,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { campaign: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const campaign = await prisma.campaign
         .findFirst({
@@ -166,11 +129,7 @@ export default new Elysia()
             availabilities: true,
           },
         })
-        .catch(mapPrismaError);
-
-      if (campaign instanceof MappedPrismaError) {
-        return status(campaign.status, campaign.response);
-      }
+        .catch(InterceptPrismaError);
 
       if (!campaign) return status(404, tr.error.campaign.notFound);
 
@@ -181,6 +140,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { campaign: ['view'] },
       detail: {
         summary: 'Get campaign',
         description:
@@ -189,15 +149,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: t.Intersect([
-          CampaignPlain,
-          t.Object({
-            targets: t.Array(CampaignTargetPlain),
-            availabilities: t.Array(CampaignAvailabilityPlain),
-          }),
-        ]),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'campaignFull',
+        403: 'error',
       },
     }
   )
@@ -206,14 +160,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { campaign: ['update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const updatedCampaign = await prisma.campaign
         .update({
@@ -227,10 +173,7 @@ export default new Elysia()
             ...body,
           },
         })
-        .catch(mapPrismaError);
-
-      if (updatedCampaign instanceof MappedPrismaError)
-        return status(updatedCampaign.status, updatedCampaign.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...updatedCampaign,
@@ -239,17 +182,18 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { campaign: ['update'] },
       detail: {
         summary: 'Update campaign',
         description: 'Update a campaign by ID.',
         tags: ['Campaigns'],
         security: [{ CookieAuth: [] }],
       },
-      body: CampaignPlainInputUpdate,
+      body: 'updateCampaign',
       response: {
-        ...ResponseSchemaSet,
-        200: CampaignPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'campaign',
+        403: 'error',
       },
     }
   )
@@ -258,14 +202,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { campaign: ['delete'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const deletedCampaign = await prisma.campaign
         .delete({
@@ -276,10 +212,7 @@ export default new Elysia()
             },
           },
         })
-        .catch(mapPrismaError);
-
-      if (deletedCampaign instanceof MappedPrismaError)
-        return status(deletedCampaign.status, deletedCampaign.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...deletedCampaign,
@@ -288,6 +221,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { campaign: ['delete'] },
       detail: {
         summary: 'Delete campaign',
         description: 'Delete a campaign by ID.',
@@ -295,9 +229,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: CampaignPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'campaign',
+        403: 'error',
       },
     }
   );

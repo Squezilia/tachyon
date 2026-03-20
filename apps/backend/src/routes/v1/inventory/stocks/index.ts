@@ -1,27 +1,20 @@
 import tr from '@/i18n/tr';
+import Elysia, { ElysiaCustomStatusResponse } from 'elysia';
+import { authMacro } from '@backend/lib/auth';
 import {
-  ErrorResponseSchema,
-  PaginationQuery,
-  ResponsePaginate,
-} from '@/model';
-import {
-  StockMovementPlain,
-  StockMovementPlainInputCreate,
-  StockPlain,
-  StockPlainInputCreate,
-} from '@database/prismabox';
-import Elysia, { t } from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
-import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
-import { StockListItem } from './index.model';
+import model from './model';
+import globals from '@/globals';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .guard({
     auth: true,
     detail: {
@@ -37,21 +30,15 @@ export default new Elysia()
 
       const { productId, ...stockData } = body;
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { stock: ['create'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       // Ensure product belongs to the active organization
-      const product = await prisma.product.findFirst({
-        where: {
-          id: productId,
-          organizationId: session.activeOrganizationId,
-        },
-      });
+      const product = await prisma.product
+        .findFirst({
+          where: {
+            id: productId,
+            organizationId: session.activeOrganizationId,
+          },
+        })
+        .catch(InterceptPrismaError);
 
       if (!product) return status(404, tr.error.product.notFound);
 
@@ -71,29 +58,24 @@ export default new Elysia()
             },
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdStock instanceof MappedPrismaError)
-        return status(createdStock.status, createdStock.response);
+        .catch(InterceptPrismaError);
 
       return status(201, createdStock);
     },
     {
       auth: true,
+      permissions: { stock: ['create'] },
       detail: {
         summary: 'Create stock',
         description: 'Create a stock record for a product.',
         tags: ['Inventory', 'Stock'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Composite([
-        StockPlainInputCreate,
-        t.Object({ productId: t.String() }),
-      ]),
+      body: 'stockCreate',
       response: {
-        ...ResponseSchemaSet,
-        201: StockPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        201: 'stock',
+        403: 'error',
       },
     }
   )
@@ -102,14 +84,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { stock: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await Promise.all([
         prisma.stock.findMany({
@@ -127,11 +101,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [stocks, count] = transaction;
 
@@ -154,6 +124,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { stock: ['view'] },
       detail: {
         summary: 'List stock',
         description:
@@ -161,11 +132,11 @@ export default new Elysia()
         tags: ['Inventory', 'Stock'],
         security: [{ CookieAuth: [] }],
       },
-      query: PaginationQuery,
+      query: 'paginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(StockListItem),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'stockPaginated',
+        403: 'error',
       },
     }
   )
@@ -174,14 +145,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { stock: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await Promise.all([
         prisma.stockMovement.findMany({
@@ -203,11 +166,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [movements, count] = transaction;
 
@@ -222,6 +181,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { stock: ['view'] },
       detail: {
         summary: 'List movements',
         description:
@@ -229,16 +189,11 @@ export default new Elysia()
         tags: ['Inventory', 'Stock'],
         security: [{ CookieAuth: [] }],
       },
-      query: PaginationQuery,
+      query: 'paginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(
-          t.Composite([
-            StockMovementPlain,
-            t.Object({ createdBy: t.Object({ name: t.String() }) }),
-          ])
-        ),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'movementsPaginated',
+        403: 'error',
       },
     }
   )
@@ -247,14 +202,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { stock: ['restock'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await prisma
         .$transaction([
@@ -279,11 +226,7 @@ export default new Elysia()
             },
           }),
         ])
-        .catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+        .catch(InterceptPrismaError);
 
       const [stockMovement] = transaction;
 
@@ -291,6 +234,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { stock: ['restock'] },
       detail: {
         summary: 'Restock',
         description:
@@ -298,18 +242,11 @@ export default new Elysia()
         tags: ['Inventory', 'Stock'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Intersect([
-        StockMovementPlainInputCreate,
-        t.Object({
-          quantityChange: t.Integer({
-            minimum: 1,
-          }),
-        }),
-      ]),
+      body: 'move',
       response: {
-        ...ResponseSchemaSet,
-        200: StockMovementPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'movement',
+        403: 'error',
       },
     }
   )
@@ -318,14 +255,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { stock: ['drain'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await prisma
         .$transaction([
@@ -350,11 +279,7 @@ export default new Elysia()
             },
           }),
         ])
-        .catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+        .catch(InterceptPrismaError);
 
       const [stockMovement] = transaction;
 
@@ -362,6 +287,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { stock: ['drain'] },
       detail: {
         summary: 'Drain',
         description:
@@ -369,18 +295,11 @@ export default new Elysia()
         tags: ['Inventory', 'Stock'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Intersect([
-        StockMovementPlainInputCreate,
-        t.Object({
-          quantityChange: t.Integer({
-            minimum: 1,
-          }),
-        }),
-      ]),
+      body: 'move',
       response: {
-        ...ResponseSchemaSet,
-        200: StockMovementPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'movement',
+        403: 'error',
       },
     }
   );

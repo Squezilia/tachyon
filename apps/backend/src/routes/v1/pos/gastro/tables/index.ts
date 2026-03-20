@@ -1,39 +1,26 @@
 import tr from '@/i18n/tr';
-import {
-  ErrorResponseSchema,
-  PaginationQuery,
-  ResponsePaginate,
-} from '@/model';
-import {
-  TablePlain,
-  TablePlainInputCreate,
-  TablePlainInputUpdate,
-} from '@database/prismabox';
+import globals from '@/globals';
 import Elysia from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
+import { authMacro } from '@backend/lib/auth';
 import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
 import { v7 } from 'uuid';
+import model from './model';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .post(
     '/',
     async ({ request: { headers }, status, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { table: ['create'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const createdTable = await prisma.table
         .create({
@@ -42,27 +29,24 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdTable instanceof MappedPrismaError) {
-        return status(createdTable.status, createdTable.response);
-      }
+        .catch(InterceptPrismaError);
 
       return createdTable;
     },
     {
       auth: true,
+      permissions: { table: ['create'] },
       detail: {
         summary: 'Create table',
         description: 'Create a new table within the active organization.',
         tags: ['Gastro', 'Tables'],
         security: [{ CookieAuth: [] }],
       },
-      body: TablePlainInputCreate,
+      body: 'createTable',
       response: {
-        ...ResponseSchemaSet,
-        200: TablePlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'table',
+        403: 'error',
       },
     }
   )
@@ -72,14 +56,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { table: ['create'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const table = await prisma.table
         .findFirst({
           where: {
@@ -87,10 +63,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (table instanceof MappedPrismaError)
-        return status(table.status, table.response);
+        .catch(InterceptPrismaError);
 
       if (!table) return status(404, tr.error.table.notFound);
 
@@ -102,15 +75,13 @@ export default new Elysia()
             id: v7(),
           },
         })
-        .catch(mapPrismaError);
-
-      if (createdTable instanceof MappedPrismaError)
-        return status(createdTable.status, createdTable.response);
+        .catch(InterceptPrismaError);
 
       return status(201, createdTable);
     },
     {
       auth: true,
+      permissions: { table: ['create'] },
       detail: {
         summary: 'Duplicate table',
         description:
@@ -119,9 +90,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        201: TablePlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        201: 'table',
+        403: 'error',
       },
     }
   )
@@ -130,14 +101,6 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { table: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const transaction = await Promise.all([
         prisma.table.findMany({
@@ -152,11 +115,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [tables, count] = transaction;
 
@@ -171,6 +130,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { table: ['view'] },
       detail: {
         summary: 'List tables',
         description:
@@ -178,11 +138,11 @@ export default new Elysia()
         tags: ['Gastro', 'Tables'],
         security: [{ CookieAuth: [] }],
       },
-      query: PaginationQuery,
+      query: 'paginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: ResponsePaginate(TablePlain),
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'tablePaginated',
+        403: 'error',
       },
     }
   )
@@ -192,14 +152,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { table: ['view'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const table = await prisma.table
         .findFirst({
           where: {
@@ -207,11 +159,7 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (table instanceof MappedPrismaError) {
-        return status(table.status, table.response);
-      }
+        .catch(InterceptPrismaError);
 
       if (!table) return status(404, tr.error.table.notFound);
 
@@ -219,6 +167,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { table: ['view'] },
       detail: {
         summary: 'Get table',
         description: 'Retrieve a table by ID.',
@@ -226,9 +175,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: TablePlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'table',
+        403: 'error',
       },
     }
   )
@@ -237,14 +186,6 @@ export default new Elysia()
     async ({ request: { headers }, status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { table: ['delete'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const updatedTable = await prisma.table
         .update({
@@ -256,26 +197,24 @@ export default new Elysia()
             ...body,
           },
         })
-        .catch(mapPrismaError);
-
-      if (updatedTable instanceof MappedPrismaError)
-        return status(updatedTable.status, updatedTable.response);
+        .catch(InterceptPrismaError);
 
       return updatedTable;
     },
     {
       auth: true,
+      permissions: { table: ['update'] },
       detail: {
         summary: 'Update table',
         description: 'Update a table by ID.',
         tags: ['Gastro', 'Tables'],
         security: [{ CookieAuth: [] }],
       },
-      body: TablePlainInputUpdate,
+      body: 'updateTable',
       response: {
-        ...ResponseSchemaSet,
-        200: TablePlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'table',
+        403: 'error',
       },
     }
   )
@@ -285,14 +224,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { table: ['update'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const deletedTable = await prisma.table
         .delete({
           where: {
@@ -300,15 +231,13 @@ export default new Elysia()
             organizationId: session.activeOrganizationId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (deletedTable instanceof MappedPrismaError)
-        return status(deletedTable.status, deletedTable.response);
+        .catch(InterceptPrismaError);
 
       return deletedTable;
     },
     {
       auth: true,
+      permissions: { table: ['delete'] },
       detail: {
         summary: 'Delete table',
         description: 'Delete a table by ID.',
@@ -316,9 +245,9 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        200: TablePlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'table',
+        403: 'error',
       },
     }
   );

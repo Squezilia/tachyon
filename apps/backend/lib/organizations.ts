@@ -1,4 +1,3 @@
-import { organization } from 'better-auth/plugins';
 import { createAccessControl } from 'better-auth/plugins/access';
 import {
   defaultStatements,
@@ -78,16 +77,3 @@ export const accountant = ac.newRole({
   tax: ['view', 'create', 'update'],
   campaign: ['view'],
 });
-
-export const organizationSettings = {
-  ac,
-  roles: {
-    admin,
-    owner,
-    manager,
-    staff,
-    accountant,
-  },
-};
-
-export default organization(organizationSettings);

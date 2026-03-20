@@ -1,37 +1,25 @@
-import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import google from '@backend/lib/ai';
 import { authMacro } from '@backend/lib/auth';
 import prisma from '@database';
+import { generateText } from 'ai';
+import Elysia from 'elysia';
+import model from './model';
 import {
-  AssistantModelMessage,
-  generateText,
-  streamText,
-  SystemModelMessage,
-  ToolModelMessage,
-  UserModelMessage,
-} from 'ai';
-import Elysia, { status, t } from 'elysia';
-import { ChatMessage } from './index.model';
-import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import { v7 } from 'uuid';
-import logger from '@backend/lib/logger';
-import { ChatPlain, MessagePlain } from '@database/prismabox/barrel';
-import { QueryPaginate, ResponsePaginate } from '@/model';
+import globals from '@/globals';
 import tr from '@/i18n/tr';
 import { Prisma } from '@database/prisma';
-
-type AISDKMessage =
-  | SystemModelMessage
-  | UserModelMessage
-  | AssistantModelMessage
-  | ToolModelMessage;
+import { AISDKMessage, createInferenceStream } from './service';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .get(
     '/chat',
     async ({ session, query }) => {
@@ -51,11 +39,7 @@ export default new Elysia()
             issuerId: session.userId,
           },
         }),
-      ]).catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError) {
-        return status(transaction.status, transaction.response);
-      }
+      ]).catch(InterceptPrismaError);
 
       const [chats, count] = transaction;
 
@@ -77,19 +61,16 @@ export default new Elysia()
         tags: ['Assistant', 'Chat'],
         security: [{ CookieAuth: [] }],
       },
-      query: QueryPaginate(t.Object({})),
-      response: { ...ResponseSchemaSet, 200: ResponsePaginate(ChatPlain) },
+      query: 'paginationQuery',
+      response: { ...ErrorReferences, 200: 'chatPaginated' },
     }
   )
   .get(
     '/chat/:id',
-    async ({ session, params }) => {
+    async ({ session, params, status }) => {
       const chat = await prisma.chat
         .findFirst({ where: { id: params.id, issuerId: session.userId } })
-        .catch(mapPrismaError);
-
-      if (chat instanceof MappedPrismaError)
-        return status(chat.status, chat.response);
+        .catch(InterceptPrismaError);
 
       if (!chat) return status(404, tr.error.assistant.notFound);
 
@@ -104,7 +85,7 @@ export default new Elysia()
         tags: ['Assistant', 'Chat'],
         security: [{ CookieAuth: [] }],
       },
-      response: { ...ResponseSchemaSet, 200: ChatPlain },
+      response: { ...ErrorReferences, 200: 'chat' },
     }
   )
   .get(
@@ -127,10 +108,7 @@ export default new Elysia()
 
       const messages = await prisma.message
         .findMany(messagesQuery)
-        .catch(mapPrismaError);
-
-      if (messages instanceof MappedPrismaError)
-        return status(messages.status, messages.response);
+        .catch(InterceptPrismaError);
 
       const nextCursor =
         messages.length === PAGE_SIZE
@@ -155,25 +133,16 @@ export default new Elysia()
         tags: ['Assistant', 'Chat'],
         security: [{ CookieAuth: [] }],
       },
-      query: t.Object({
-        cursor: t.Optional(t.String()),
-      }),
+      query: 'cursorPaginationQuery',
       response: {
-        ...ResponseSchemaSet,
-        200: t.Object({
-          data: t.Array(MessagePlain),
-          meta: t.Object({
-            cursor: t.Optional(t.String()),
-            nextCursor: t.Optional(t.String()),
-            cursorLength: t.Integer(),
-          }),
-        }),
+        ...ErrorReferences,
+        200: 'messageCursorPaginated',
       },
     }
   )
   .post(
     '/chat',
-    async function ({ session }) {
+    async function ({ session, status }) {
       const chat = await prisma.chat
         .create({
           data: {
@@ -181,10 +150,7 @@ export default new Elysia()
             issuerId: session.userId,
           },
         })
-        .catch(mapPrismaError);
-
-      if (chat instanceof MappedPrismaError)
-        return status(chat.status, chat.response);
+        .catch(InterceptPrismaError);
 
       return status(201, chat);
     },
@@ -197,8 +163,8 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
-        ...ResponseSchemaSet,
-        201: ChatPlain,
+        ...ErrorReferences,
+        201: 'chat',
       },
     }
   )
@@ -222,10 +188,7 @@ export default new Elysia()
             },
           },
         })
-        .catch(mapPrismaError);
-
-      if (chat instanceof MappedPrismaError)
-        return status(chat.status, chat.response);
+        .catch(InterceptPrismaError);
 
       if (!chat) return status(404);
 
@@ -235,14 +198,16 @@ export default new Elysia()
           prompt: `Generate a simple and short chat title for this prompt \`${body.prompt}\`. Use given prompt language! Only generate one! Only write title! Do not use Markdown!`,
         });
 
-        await prisma.chat.update({
-          where: {
-            id: chat.id,
-          },
-          data: {
-            name: text,
-          },
-        });
+        await prisma.chat
+          .update({
+            where: {
+              id: chat.id,
+            },
+            data: {
+              name: text,
+            },
+          })
+          .catch(InterceptPrismaError);
       }
 
       const inferenceMessageId = v7();
@@ -262,10 +227,7 @@ export default new Elysia()
             },
           ],
         })
-        .catch(mapPrismaError);
-
-      if (messageBatch instanceof MappedPrismaError)
-        return status(messageBatch.status, messageBatch.response);
+        .catch(InterceptPrismaError);
 
       const mappedMessages = chat.messages.map((message): AISDKMessage => {
         if (message.senderId) {
@@ -293,46 +255,12 @@ export default new Elysia()
 
       const model = google(body.model);
 
-      const tools = {
-        google_search: google.tools.googleSearch({}),
-      };
-
-      const inference = streamText({
-        model: model,
-        tools: ['gemini-2.5-flash-lite', 'gemini-2.5-flash'].includes(
-          body.model
-        )
-          ? tools
-          : undefined,
-        providerOptions: {
-          google: {} satisfies GoogleGenerativeAIProviderOptions,
-        },
-        messages: mappedMessages,
-        async onAbort(event) {
-          logger.error(`${chat.id} Aborted!`);
-          await prisma.message.update({
-            where: {
-              id: inferenceMessageId,
-            },
-            data: {
-              content: event.steps.map((step) => step.text).join(' '),
-            },
-          });
-        },
-        async onFinish(inference) {
-          logger.info(`${chat.id} Finished!`);
-          await prisma.message.update({
-            where: {
-              id: inferenceMessageId,
-            },
-            data: {
-              content: inference.text,
-            },
-          });
-        },
-      });
-
-      return inference.textStream;
+      return createInferenceStream(
+        inferenceMessageId,
+        chat.id,
+        model,
+        mappedMessages
+      );
     },
     {
       auth: true,
@@ -343,6 +271,6 @@ export default new Elysia()
         tags: ['Assistant', 'Chat'],
         security: [{ CookieAuth: [] }],
       },
-      body: ChatMessage,
+      body: 'createMessage',
     }
   );

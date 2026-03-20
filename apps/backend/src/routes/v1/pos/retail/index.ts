@@ -1,18 +1,21 @@
 import tr from '@/i18n/tr';
-import { ErrorResponseSchema } from '@/model';
-import { SellPlain } from '@database/prismabox/Sell';
-import Elysia, { t } from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
+import globals from '@/globals';
+import Elysia from 'elysia';
+import { authMacro } from '@backend/lib/auth';
 import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
 import prisma from '@database';
 import calculateTotal from '../service';
+import model from './model';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .guard({
     auth: true,
     detail: { tags: ['Retail'], security: [{ CookieAuth: [] }] },
@@ -24,16 +27,8 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { retail: ['sell'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
-      const [stocks] = await Promise.all([
-        prisma.stock.findMany({
+      const stocks = await prisma.stock
+        .findMany({
           where: {
             id: {
               in: Object.keys(body.stocks),
@@ -51,18 +46,15 @@ export default new Elysia()
               },
             },
           },
-        }),
-      ]);
+        })
+        .catch(InterceptPrismaError);
 
       const calculatedTotal = await calculateTotal(
         session.activeOrganizationId,
         session.userId,
         stocks,
         body.stocks
-      ).catch(mapPrismaError);
-
-      if (calculatedTotal instanceof MappedPrismaError)
-        return status(calculatedTotal.status, calculatedTotal.response);
+      ).catch(InterceptPrismaError);
 
       const { appliedTaxes, cartConfig, movementConfig } = calculatedTotal;
 
@@ -87,10 +79,7 @@ export default new Elysia()
             data: appliedTaxes,
           }),
         ])
-        .catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError)
-        return status(transaction.status, transaction.response);
+        .catch(InterceptPrismaError);
 
       const [sell] = transaction;
 
@@ -102,6 +91,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { retail: ['sell'] },
       detail: {
         summary: 'Create sale',
         description:
@@ -109,14 +99,11 @@ export default new Elysia()
         tags: ['Retail'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Object({
-        stocks: t.Record(t.String(), t.Integer()),
-        campaigns: t.Array(t.String()),
-      }),
+      body: 'createSell',
       response: {
-        ...ResponseSchemaSet,
-        200: SellPlain,
-        403: ErrorResponseSchema,
+        ...ErrorReferences,
+        200: 'sell',
+        403: 'error',
       },
     }
   )
@@ -126,14 +113,6 @@ export default new Elysia()
     async ({ params, session, user, request: { headers }, status }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { retail: ['refund'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const sell = await prisma.sell
         .findFirst({
@@ -146,46 +125,48 @@ export default new Elysia()
             campaignApplications: true,
           },
         })
-        .catch(mapPrismaError);
-
-      if (sell instanceof MappedPrismaError)
-        return status(sell.status, sell.response);
+        .catch(InterceptPrismaError);
 
       if (!sell) return status(404, tr.error.retail.notFound);
 
       if (sell?.isReversal || sell?.reversedSellId)
         return status(400, tr.error.retail.sellIsAlreadyReversed);
 
-      return await prisma.sell.create({
-        data: {
-          issuerId: user.id,
-          reversalOf: {
-            connect: {
-              id: sell.id,
+      return await prisma.sell
+        .create({
+          data: {
+            issuerId: user.id,
+            reversalOf: {
+              connect: {
+                id: sell.id,
+              },
             },
+            isReversal: true,
+            products: {
+              connect: [...sell.products],
+            },
+            campaignApplications: {
+              connect: [...sell.campaignApplications],
+            },
+            organizationId: session.activeOrganizationId,
           },
-          isReversal: true,
-          products: {
-            connect: [...sell.products],
-          },
-          campaignApplications: {
-            connect: [...sell.campaignApplications],
-          },
-          organizationId: session.activeOrganizationId,
-        },
-      });
+        })
+        .catch(InterceptPrismaError);
     },
     {
       auth: true,
-      body: t.Object({
-        reverseStocks: t.Boolean(),
-      }),
+      permissions: { retail: ['refund'] },
       detail: {
         summary: 'Refund sale',
         description:
           'Reverse a sale and restore stock. Implementation pending.',
         tags: ['Retail'],
         security: [{ CookieAuth: [] }],
+      },
+      body: 'refundSell',
+      response: {
+        ...ErrorReferences,
+        200: 'sell',
       },
     }
   );

@@ -1,33 +1,28 @@
-import Elysia, { t } from 'elysia';
-import { auth, authMacro } from '@backend/lib/auth';
+import Elysia from 'elysia';
+import { authMacro } from '@backend/lib/auth';
 import tr from '@/i18n/tr';
 import prisma from '@database';
-import { OrderPlain } from '@database/prismabox';
 import {
-  MappedPrismaError,
-  mapPrismaError,
-  ResponseSchemaSet,
+  catchPrismaError,
+  InterceptPrismaError,
+  ErrorReferences,
 } from '@backend/lib/error';
-import { ErrorResponseSchema } from '@/model';
+import globals from '@/globals';
 import calculateTotal, { calculateTax, updateTaxes } from '../service';
 import { CartProductTax, Prisma } from '@database/prisma';
 import { v7 } from 'uuid';
+import model from './model';
 
 export default new Elysia()
   .use(authMacro)
+  .use(globals)
+  .use(model)
+  .use(catchPrismaError)
   .post(
     '/',
     async ({ session, status, request: { headers }, body }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { gastro: ['order'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const stocks = await prisma.stock.findMany({
         where: {
@@ -54,10 +49,7 @@ export default new Elysia()
         session.userId,
         stocks,
         body.stocks
-      ).catch(mapPrismaError);
-
-      if (calculatedTotal instanceof MappedPrismaError)
-        return status(calculatedTotal.status, calculatedTotal.response);
+      ).catch(InterceptPrismaError);
 
       const { appliedTaxes, cartConfig, movementConfig, sub, tax, total } =
         calculatedTotal;
@@ -87,10 +79,7 @@ export default new Elysia()
             data: appliedTaxes,
           }),
         ])
-        .catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError)
-        return status(transaction.status, transaction.response);
+        .catch(InterceptPrismaError);
 
       const [order] = transaction;
 
@@ -103,6 +92,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { gastro: ['order'] },
       detail: {
         summary: 'Create order',
         description:
@@ -110,14 +100,11 @@ export default new Elysia()
         tags: ['Gastro', 'Orders'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Object({
-        tableId: t.Optional(t.String()),
-        stocks: t.Record(t.String(), t.Integer()),
-      }),
+      body: 'createOrder',
       response: {
-        ...ResponseSchemaSet,
-        403: ErrorResponseSchema,
-        200: OrderPlain,
+        ...ErrorReferences,
+        200: 'order',
+        403: 'error',
       },
     }
   )
@@ -126,14 +113,6 @@ export default new Elysia()
     async ({ session, status, params, request: { headers }, body }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
-
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { gastro: ['order'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
 
       const order = await prisma.order
         .findFirst({
@@ -154,10 +133,7 @@ export default new Elysia()
             },
           },
         })
-        .catch(mapPrismaError);
-
-      if (order instanceof MappedPrismaError)
-        return status(order.status, order.response);
+        .catch(InterceptPrismaError);
 
       if (!order) return status(404, tr.error.gastro.order.notFound);
 
@@ -240,27 +216,27 @@ export default new Elysia()
         // we don't have to do new value checks because they're already completed previous loop
       }
 
-      console.log(diffTable);
-
-      const stocks = await prisma.stock.findMany({
-        where: {
-          id: {
-            in: Object.keys(diffTable),
+      const stocks = await prisma.stock
+        .findMany({
+          where: {
+            id: {
+              in: Object.keys(diffTable),
+            },
+            organizationId: session.activeOrganizationId,
           },
-          organizationId: session.activeOrganizationId,
-        },
-        include: {
-          product: {
-            include: {
-              appliedTaxes: {
-                orderBy: {
-                  priority: 'asc',
+          include: {
+            product: {
+              include: {
+                appliedTaxes: {
+                  orderBy: {
+                    priority: 'asc',
+                  },
                 },
               },
             },
           },
-        },
-      });
+        })
+        .catch(InterceptPrismaError);
 
       const movements: Prisma.StockMovementCreateManyInput[] = [];
       const createdProducts: Prisma.CartProductCreateManyInput[] = [];
@@ -386,10 +362,7 @@ export default new Elysia()
             },
           });
         })
-        .catch(mapPrismaError);
-
-      if (transaction instanceof MappedPrismaError)
-        return status(transaction.status, transaction.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...transaction,
@@ -400,6 +373,7 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { gastro: ['order'] },
       detail: {
         summary: 'Update order items',
         description:
@@ -407,13 +381,11 @@ export default new Elysia()
         tags: ['Gastro', 'Orders'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Object({
-        stocks: t.Record(t.String(), t.Integer()),
-      }),
+      body: 'updateOrder',
       response: {
-        ...ResponseSchemaSet,
-        403: ErrorResponseSchema,
-        200: OrderPlain,
+        ...ErrorReferences,
+        403: 'error',
+        200: 'order',
       },
     }
   )
@@ -423,14 +395,6 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
-      if (
-        !(await auth.api.hasPermission({
-          headers,
-          body: { permissions: { gastro: ['close'] } },
-        }))
-      )
-        return status(403, tr.error.organization.insufficentPermission);
-
       const order = await prisma.order
         .findFirst({
           where: {
@@ -439,10 +403,7 @@ export default new Elysia()
             status: 'OPEN',
           },
         })
-        .catch(mapPrismaError);
-
-      if (order instanceof MappedPrismaError)
-        return status(order.status, order.response);
+        .catch(InterceptPrismaError);
 
       if (!order) return status(404, tr.error.gastro.order.notFound);
 
@@ -455,10 +416,7 @@ export default new Elysia()
             status: 'CLOSED',
           },
         })
-        .catch(mapPrismaError);
-
-      if (updatedOrder instanceof MappedPrismaError)
-        return status(updatedOrder.status, updatedOrder.response);
+        .catch(InterceptPrismaError);
 
       return {
         ...updatedOrder,
@@ -469,19 +427,17 @@ export default new Elysia()
     },
     {
       auth: true,
+      permissions: { gastro: ['close'] },
       detail: {
         summary: 'Close order',
         description: 'Mark an open order as closed.',
         tags: ['Gastro', 'Orders'],
         security: [{ CookieAuth: [] }],
       },
-      body: t.Object({
-        stocks: t.Record(t.String(), t.Integer()),
-      }),
       response: {
-        ...ResponseSchemaSet,
-        403: ErrorResponseSchema,
-        200: OrderPlain,
+        ...ErrorReferences,
+        403: 'error',
+        200: 'order',
       },
     }
   )

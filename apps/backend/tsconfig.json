@@ -1,7 +1,8 @@
 {
   "extends": "config/typescript/base.json",
   "compilerOptions": {
-    "jsx": "react",
+    "lib": ["ESNext"],
+    "jsx": "preserve",
     "module": "esnext",
     "moduleResolution": "bundler",
     "esModuleInterop": true,
@@ -10,8 +11,15 @@
 
     "emitDeclarationOnly": true,
     "declaration": true,
+    "declarationMap": false,
     "outDir": "dist",
     "baseUrl": ".",
+
+    "checkJs": false,
+    "skipLibCheck": true,
+    "composite": false,
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
 
     "paths": {
       "@/*": ["./src/*"],
@@ -26,7 +34,6 @@
       "@database/prisma": ["../../packages/database/dist/prisma/client"]
     }
   },
-  "references": [{ "path": "../../packages/database" }],
   "include": ["src", "test", "scripts", "lib"],
   "exclude": ["node_modules", "dist"]
 }
