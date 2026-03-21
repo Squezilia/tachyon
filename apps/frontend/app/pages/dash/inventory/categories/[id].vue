@@ -9,51 +9,42 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { FormType } from '~/components/resourceForms/CategoryForm.vue';
-import type { ErrorResponseSchema } from '@backend/model';
-import type { CategoryPlain } from '@database/prismabox';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
 });
 
-const { $api } = useNuxtApp();
-
 const values = ref<FormType>({
   name: '',
 });
-const id = useRoute().params.id;
+const id = `${useRoute().params.id}`;
 
-function onSubmit(values: FormType) {
-  useToastFetch(`/v1/inventory/categories/update/${id}`, {
-    fetchOptions: {
-      method: 'PATCH',
-      body: {
-        name: values.name,
-      },
-    },
-    toastOptions: {
-      loading: 'Kategori Oluşturuluyor...',
-      success: 'Kategori Oluşturuldu!',
-      callback: '/dash/inventory/categories',
-    },
+async function onSubmit(values: FormType) {
+  const result = await client.v1.inventory
+    .categories({ id })
+    .patch({
+      name: values.name,
+    })
+    .catch(useClientError);
+
+  if (!result) return;
+
+  useToast('Kategori Düzenlendi!', {
+    type: 'success',
   });
 }
 
 onMounted(async () => {
-  const fetchedValues = await $api<typeof CategoryPlain.static>(
-    `/v1/inventory/categories/get/${id}`,
-    {
-      cache: 'no-cache',
-      onResponseError({ response }) {
-        if (response.ok) return;
-        const body = response._data as typeof ErrorResponseSchema.static;
-        useToast(body.error, { description: body.reason, type: 'error' });
-      },
-    }
-  );
+  const res = await client.v1.inventory
+    .categories({ id })
+    .get()
+    .catch(useClientError);
+
+  if (!res || !res.data) return;
 
   values.value = {
-    name: fetchedValues?.name,
+    name: res.data.name,
   };
 });
 

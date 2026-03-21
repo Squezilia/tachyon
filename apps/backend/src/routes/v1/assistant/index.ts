@@ -19,7 +19,6 @@ export default new Elysia()
   .use(authMacro)
   .use(globals)
   .use(model)
-  .use(handleError)
   .get(
     '/chat',
     async ({ session, query }) => {

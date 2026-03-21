@@ -10,14 +10,11 @@ import {
 } from '@/components/ui/card';
 import formatPrice from '~/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/ProductForm.vue';
-import type { ErrorResponseSchema } from '@backend/model';
-import type { ProductPlain } from '@database/prismabox';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
 });
-
-const { $api } = useNuxtApp();
 
 const values = ref<FormType>({
   name: '',
@@ -25,24 +22,21 @@ const values = ref<FormType>({
   price: 0,
 });
 const categoryList = ref<{ name: string; id: string }[]>([]);
-const id = useRoute().params.id;
+const id = useRoute().params.id + '';
 
-function onSubmit(values: FormType) {
-  useToastFetch(`/v1/inventory/products/update/${id}`, {
-    fetchOptions: {
-      method: 'PATCH',
-      body: {
-        name: values.name,
-        price: '' + values.price,
-        categoryId: values.categoryId,
-      },
-    },
-    toastOptions: {
-      success: 'Ürün Düzenlendi!',
-      loading: 'Ürün Düzenleniyor...',
-      callback: '/dash/inventory/products',
-    },
-  });
+async function onSubmit(values: FormType) {
+  const res = await client.v1.inventory
+    .products({ id })
+    .patch({
+      name: values.name,
+      price: '' + values.price,
+      categoryId: values.categoryId,
+    })
+    .catch(useClientError);
+
+  if (!res) return;
+
+  useToast('Ürün Düzenlendi!', { type: 'success' });
 }
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Ürün');
@@ -52,36 +46,25 @@ const categoryName = computed(
 );
 
 onMounted(async () => {
-  const fetchedList = await $api<{ name: string; id: string }[]>(
-    '/v1/inventory/categories/get/raw',
-    { cache: 'no-cache' }
-  ).catch((err: typeof ErrorResponseSchema.static) => {
-    useToast(err.error, { description: err.reason, type: 'error' });
-    return;
-  });
+  const listRes = await client.v1.inventory.products.raw
+    .get()
+    .catch(useClientError);
 
-  if (!fetchedList) return;
+  if (!listRes || !listRes.data) return;
 
-  categoryList.value = fetchedList;
+  categoryList.value = listRes.data;
 
-  const fetchedValues = await $api<typeof ProductPlain.static>(
-    `/v1/inventory/products/get/${id}`,
-    {
-      cache: 'no-cache',
-      onResponseError({ response }) {
-        if (response.ok) return;
-        const body = response._data as typeof ErrorResponseSchema.static;
-        useToast(body.error, { description: body.reason, type: 'error' });
-      },
-    }
-  );
+  const valuesRes = await client.v1.inventory
+    .products({ id })
+    .get()
+    .catch(useClientError);
 
-  if (!fetchedValues) return;
+  if (!valuesRes || !valuesRes.data) return;
 
   values.value = {
-    name: fetchedValues.name,
-    price: +fetchedValues.price,
-    categoryId: fetchedValues.categoryId,
+    name: valuesRes.data.name,
+    price: +valuesRes.data.price,
+    categoryId: valuesRes.data.categoryId,
   };
 });
 </script>

@@ -67,33 +67,27 @@ const columns: ColumnDef<typeof TablePlain.static, unknown>[] = [
           },
           {
             title: 'Kopyala',
-            action: () =>
-              useToastFetch(`/v1/pos/tables/dupe/${a.renderValue()}`, {
-                fetchOptions: {
-                  method: 'POST',
-                },
-                toastOptions: {
-                  loading: 'Masa Kopyalanıyor...',
-                  success: 'Masa Kopyalandı!',
-                  onResult: () => updateState.value++,
-                },
-              }),
+            action: async () => {
+              const res = await client.v1.pos.gastro.tables
+                .dupe({ id: a.renderValue() + '' })
+                .post()
+                .catch(useClientError);
+              if (!res) return;
+              useToast('Masa Kopyalandı!', { type: 'success' });
+              updateState.value++;
+            },
             group: 'default',
             icon: Copy,
           },
           {
             title: 'Sil',
-            action: () => {
-              useToastFetch(`/v1/pos/tables/delete/${a.renderValue()}`, {
-                fetchOptions: {
-                  method: 'DELETE',
-                },
-                toastOptions: {
-                  loading: 'Masa Siliniyor...',
-                  success: 'Masa Silindi!',
-                  onResult: () => updateState.value++,
-                },
-              });
+            action: async () => {
+              const res = await client.v1.pos.gastro
+                .tables({ id: a.renderValue() + '' })
+                .delete()
+                .catch(useClientError);
+              if (!res) return;
+              useToast('Masa Silindi!', { type: 'success' });
             },
             group: 'danger',
             icon: Trash2,

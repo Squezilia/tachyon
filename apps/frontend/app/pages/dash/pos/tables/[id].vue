@@ -9,55 +9,37 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { FormType } from '~/components/resourceForms/TableForm.vue';
-import type { ErrorResponseSchema } from '@backend/model';
-import type { ProductPlain } from '@database/prismabox';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
 });
 
-const { $api } = useNuxtApp();
-
 const values = ref<FormType>({
   name: '',
 });
-const id = useRoute().params.id;
+const id = useRoute().params.id + '';
 
-function onSubmit(values: FormType) {
-  useToastFetch(`/v1/pos/tables/update/${id}`, {
-    fetchOptions: {
-      method: 'PATCH',
-      body: {
-        name: values.name,
-      },
-    },
-    toastOptions: {
-      success: 'Masa Düzenlendi!',
-      loading: 'Masa Düzenleniyor...',
-      callback: '/dash/pos/tables',
-    },
-  });
+async function onSubmit(values: FormType) {
+  const res = await client.v1.pos.gastro
+    .tables({ id })
+    .patch({ name: values.name })
+    .catch(useClientError);
+  if (!res) return;
+  useToast('Masa Düzenlendi!', { type: 'success' });
 }
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Masa');
 
 onMounted(async () => {
-  const fetchedValues = await $api<typeof ProductPlain.static>(
-    `/v1/pos/tables/get/${id}`,
-    {
-      cache: 'no-cache',
-      onResponseError({ response }) {
-        if (response.ok) return;
-        const body = response._data as typeof ErrorResponseSchema.static;
-        useToast(body.error, { description: body.reason, type: 'error' });
-      },
-    }
-  );
-
-  if (!fetchedValues) return;
+  const valuesRes = await client.v1.pos.gastro
+    .tables({ id })
+    .get()
+    .catch(useClientError);
+  if (!valuesRes || !valuesRes.data) return;
 
   values.value = {
-    name: fetchedValues.name,
+    name: valuesRes.data.name,
   };
 });
 </script>

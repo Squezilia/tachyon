@@ -10,14 +10,11 @@ import {
 } from '@/components/ui/card';
 import formatPrice from '@/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/TaxForm.vue';
-import type { TaxPlain } from '@database/prismabox';
-import type { ErrorResponseSchema } from '@backend/model';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
 });
-
-const { $api } = useNuxtApp();
 
 const values = ref<FormType>({
   name: '',
@@ -26,50 +23,39 @@ const values = ref<FormType>({
   priority: 0,
   rate: 0,
 });
-const id = useRoute().params.id;
+
+const id = useRoute().params.id + '';
 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
 
-function onSubmit(values: FormType) {
-  useToastFetch(`/v1/management/taxes/update/${id}`, {
-    fetchOptions: {
-      method: 'PATCH',
-      body: {
-        name: values.name,
-        priority: values.priority,
-        rate: values.rate + '',
-        isFixed: values.isFixed,
-        isCumulative: values.isCumulative,
-      },
-    },
-    toastOptions: {
-      success: 'Vergi Düzenlendi!',
-      loading: 'Vergi Düzenleniyor...',
-      callback: '/dash/management/taxes',
-    },
-  });
+async function onSubmit(values: FormType) {
+  const res = await client.v1.management
+    .taxes({ id })
+    .patch({
+      name: values.name,
+      priority: values.priority,
+      rate: values.rate + '',
+      isFixed: values.isFixed,
+      isCumulative: values.isCumulative,
+    })
+    .catch(useClientError);
+  if (!res) return;
+
+  useToast('Vergi Düzenlendi!', { type: 'success' });
 }
 
 onMounted(async () => {
-  const fetchedValues = await $api<typeof TaxPlain.static>(
-    `/v1/management/taxes/get/${id}`,
-    {
-      cache: 'no-cache',
-      onResponseError({ response }) {
-        if (response.ok) return;
-        const body = response._data as typeof ErrorResponseSchema.static;
-        useToast(body.error, { description: body.reason, type: 'error' });
-      },
-    }
-  );
-
-  if (!fetchedValues) return;
+  const valuesRes = await client.v1.management
+    .taxes({ id })
+    .get()
+    .catch(useClientError);
+  if (!valuesRes || !valuesRes.data) return;
 
   values.value = {
-    name: fetchedValues.name,
-    rate: +fetchedValues.rate,
-    priority: fetchedValues.priority,
-    isFixed: fetchedValues.isFixed,
-    isCumulative: fetchedValues.isCumulative,
+    name: valuesRes.data.name,
+    rate: +valuesRes.data.rate,
+    priority: valuesRes.data.priority,
+    isFixed: valuesRes.data.isFixed,
+    isCumulative: valuesRes.data.isCumulative,
   };
 });
 

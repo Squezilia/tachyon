@@ -17,7 +17,6 @@ export default new Elysia()
   .use(authMacro)
   .use(globals)
   .use(model)
-  .use(handleError)
   .post(
     '/',
     async ({ session, status, request: { headers }, body }) => {

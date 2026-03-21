@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { FormType } from '~/components/resourceForms/TableForm.vue';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
@@ -18,20 +19,15 @@ const values = ref<FormType>({
   name: '',
 });
 
-function onSubmit(values: FormType) {
-  useToastFetch('/v1/pos/tables/create', {
-    fetchOptions: {
-      method: 'POST',
-      body: {
-        name: values.name,
-      },
-    },
-    toastOptions: {
-      success: 'Masa Oluşturuldu!',
-      loading: 'Masa Oluşturuluyor...',
-      callback: '/dash/pos/tables',
-    },
-  });
+async function onSubmit(values: FormType) {
+  if (!values.name) return;
+
+  const res = await client.v1.pos.gastro.tables
+    .post({ name: values.name })
+    .catch(useClientError);
+  if (!res) return;
+
+  useToast('Masa Oluşturuldu!', { type: 'success' });
 }
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Masa');

@@ -13,7 +13,7 @@ import {
   Trash2,
 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
-import type { ProductListItem } from '@backend/routes/v1/inventory/products/index.model';
+import type { ProductListItem } from '@backend/routes/v1/inventory/products/model';
 import toLocaleDate from '~/lib/toLocaleDate';
 
 const updateState = ref(0);
@@ -84,36 +84,30 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
           },
           {
             title: 'Kopyala',
-            action: () =>
-              useToastFetch(`/v1/inventory/products/dupe/${a.renderValue()}`, {
-                fetchOptions: {
-                  method: 'POST',
-                },
-                toastOptions: {
-                  loading: 'Ürün Kopyalanıyor...',
-                  success: 'Ürün Kopyalandı!',
-                  onResult: () => updateState.value++,
-                },
-              }),
+            action: async () => {
+              const res = await client.v1.inventory.products
+                .dupe({ id: a.renderValue() + '' })
+                .post()
+                .catch(useClientError);
+
+              if (!res) return;
+
+              useToast('Ürün Kopyalandı!', { type: 'success' });
+            },
             group: 'default',
             icon: Copy,
           },
           {
             title: 'Sil',
-            action: () => {
-              useToastFetch(
-                `/v1/inventory/products/delete/${a.renderValue()}`,
-                {
-                  fetchOptions: {
-                    method: 'DELETE',
-                  },
-                  toastOptions: {
-                    loading: 'Ürün Siliniyor...',
-                    success: 'Ürün Silindi!',
-                    onResult: () => updateState.value++,
-                  },
-                }
-              );
+            action: async () => {
+              const res = await client.v1.inventory
+                .products({ id: a.renderValue() + '' })
+                .delete()
+                .catch(useClientError);
+
+              if (!res) return;
+
+              useToast('Ürün Silindi!', { type: 'success' });
             },
             group: 'danger',
             icon: Trash2,

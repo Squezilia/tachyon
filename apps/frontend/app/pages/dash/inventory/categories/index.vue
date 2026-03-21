@@ -58,20 +58,20 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
           },
           {
             title: 'Kopyala',
-            action: () => {
-              useToastFetch(
-                `/v1/inventory/categories/dupe/${a.renderValue()}`,
-                {
-                  fetchOptions: {
-                    method: 'POST',
-                  },
-                  toastOptions: {
-                    loading: 'Kategori Kopyalanıyor...',
-                    success: 'Kategori Kopyalandı!',
-                    onResult: () => updateState.value++,
-                  },
-                }
-              );
+            action: async () => {
+              const res = await client.v1.inventory.categories
+                .dupe({
+                  id: a.renderValue() + '',
+                })
+                .post()
+                .catch(useClientError);
+
+              if (!res) return;
+
+              useToast('Kategori Kopyalandı!', {
+                type: 'success',
+              });
+              updateState.value++;
             },
             group: 'default',
             icon: Copy,
@@ -79,19 +79,12 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
           {
             title: 'Sil',
             action: async () => {
-              useToastFetch(
-                `/v1/inventory/categories/delete/${a.renderValue()}`,
-                {
-                  fetchOptions: {
-                    method: 'DELETE',
-                  },
-                  toastOptions: {
-                    loading: 'Kategori Siliniyor...',
-                    success: 'Kategori Silindi!',
-                    onResult: () => updateState.value++,
-                  },
-                }
-              );
+              const res = await client.v1.inventory
+                .categories({ id: a.renderValue() + '' })
+                .delete()
+                .catch(useClientError);
+
+              if (res) useToast('Kategori Silindi!', { type: 'success' });
             },
             group: 'danger',
             icon: Trash2,

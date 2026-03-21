@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/card';
 import formatPrice from '@/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/TaxForm.vue';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
@@ -24,24 +25,21 @@ const values = ref<FormType>({
 });
 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
 
-function onSubmit(values: FormType) {
-  useToastFetch(`/v1/management/taxes/create`, {
-    fetchOptions: {
-      method: 'POST',
-      body: {
-        name: values.name,
-        priority: values.priority,
-        rate: values.rate + '',
-        isFixed: values.isFixed,
-        isCumulative: values.isCumulative,
-      },
-    },
-    toastOptions: {
-      success: 'Vergi Oluşturuldu!',
-      loading: 'Vergi Oluşturuluyor...',
-      callback: '/dash/management/taxes',
-    },
-  });
+async function onSubmit(values: FormType) {
+  if (!values.name || !values.priority) return;
+
+  const res = await client.v1.management.taxes
+    .post({
+      name: values.name,
+      priority: values.priority,
+      rate: values.rate + '',
+      isFixed: values.isFixed,
+      isCumulative: values.isCumulative,
+    })
+    .catch(useClientError);
+  if (!res) return;
+
+  useToast('Vergi Oluşturuldu!', { type: 'success' });
 }
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Vergi');

@@ -10,13 +10,12 @@ import {
 } from '@/components/ui/card';
 import formatPrice from '~/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/ProductForm.vue';
-import type { ErrorResponseSchema } from '@backend/model';
+import type { CategoryRaw } from '@backend/routes/v1/inventory/categories/model';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
 });
-
-type CategoryOption = { name: string; id: string }[];
 
 const values = ref<FormType>({
   name: '',
@@ -24,42 +23,38 @@ const values = ref<FormType>({
   price: 0,
 });
 
-const categoryList = await useApi<
-  CategoryOption | typeof ErrorResponseSchema.static
->('/v1/inventory/categories/get/raw', {
-  cache: 'no-cache',
-  async onResponseError({ response }) {
-    if (response.ok) return;
-    const body = response._data as typeof ErrorResponseSchema.static;
-    useToast(body.error, { type: 'error' });
-  },
-});
+const categoryList = ref<(typeof CategoryRaw.static)[]>([]);
 
-function onSubmit(values: FormType) {
-  useToastFetch('/v1/inventory/products/create', {
-    fetchOptions: {
-      method: 'POST',
-      body: {
-        name: values.name,
-        price: '' + values.price,
-        categoryId: values.categoryId,
-      },
-    },
-    toastOptions: {
-      success: 'Ürün Oluşturuldu!',
-      loading: 'Ürün Oluşturuluyor...',
-      callback: '/dash/inventory/products',
-    },
-  });
+async function onSubmit(values: FormType) {
+  if (!values.name || !values.price || !values.categoryId) return;
+
+  const res = await client.v1.inventory.products
+    .post({
+      name: values.name,
+      price: '' + values.price,
+      categoryId: values.categoryId,
+    })
+    .catch(useClientError);
+
+  if (!res) return;
+
+  useToast('Ürün Oluşturuldu!', { type: 'success' });
 }
+
+onMounted(async () => {
+  const listRes = await client.v1.inventory.categories.raw
+    .get()
+    .catch(useClientError);
+  if (!listRes || !listRes.data) return;
+
+  categoryList.value = listRes.data;
+});
 
 const namePreview = computed(() => values.value.name?.trim() || 'Yeni Ürün');
 const categoryName = computed(() => {
-  if (!categoryList.data.value || !Array.isArray(categoryList.data.value))
-    return;
-  return categoryList.data.value?.find(
-    (item) => item.id === values.value.categoryId
-  )?.name;
+  if (!categoryList.value || !Array.isArray(categoryList.value)) return;
+  return categoryList.value.find((item) => item.id === values.value.categoryId)
+    ?.name;
 });
 </script>
 

@@ -10,13 +10,12 @@ import {
 } from '@/components/ui/card';
 import formatPrice from '@/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/StockForm.vue';
-import type { ErrorResponseSchema } from '@backend/model';
+import type { ProductRaw } from '@backend/routes/v1/inventory/products/model';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
 });
-
-type ProductOption = { name: string; id: string; price: string };
 
 const values = ref<FormType>({
   productId: '',
@@ -24,40 +23,36 @@ const values = ref<FormType>({
   quantity: 0,
 });
 
-const products = await useApi<
-  ProductOption[] | typeof ErrorResponseSchema.static
->('/v1/inventory/products/get/raw', {
-  cache: 'no-cache',
-  async onResponseError({ response }) {
-    if (response.ok) return;
-    const body = response._data as typeof ErrorResponseSchema.static;
-    useToast(body.error, { description: body.reason, type: 'error' });
-  },
-});
+const products = ref<(typeof ProductRaw.static)[]>([]);
 
-function onSubmit(values: FormType) {
-  useToastFetch('/v1/inventory/stocks/create', {
-    fetchOptions: {
-      method: 'POST',
-      body: {
-        quantity: values.quantity,
-        minQuantity: values.minQuantity,
-        maxQuantity: values.maxQuantity,
-        lastRestockedAt: values.lastRestockedAt,
-        productId: values.productId,
-      },
-    },
-    toastOptions: {
-      success: 'Stok Oluşturuldu!',
-      loading: 'Stok Oluşturuluyor...',
-      callback: '/dash/inventory/stocks',
-    },
-  });
+async function onSubmit(values: FormType) {
+  if (!values.quantity || !values.minQuantity || !values.productId) return;
+
+  const res = await client.v1.inventory.stocks
+    .post({
+      quantity: values.quantity,
+      minQuantity: values.minQuantity,
+      maxQuantity: values.maxQuantity,
+      lastRestockedAt: values.lastRestockedAt,
+      productId: values.productId,
+    })
+    .catch(useClientError);
+  if (!res) return;
+
+  useToast('Stok Oluşturuldu!', { type: 'success' });
 }
 
+onMounted(async () => {
+  const res = await client.v1.inventory.products.raw
+    .get()
+    .catch(useClientError);
+  if (!res || !res.data) return;
+  products.value = res.data;
+});
+
 const selectedProduct = computed(() => {
-  if (!products.data.value || !Array.isArray(products.data.value)) return;
-  return products.data.value?.find(
+  if (!products.value || !Array.isArray(products.value)) return;
+  return products.value.find(
     (product) => product.id === values.value.productId
   );
 });

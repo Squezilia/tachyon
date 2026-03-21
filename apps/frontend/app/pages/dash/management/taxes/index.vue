@@ -85,33 +85,29 @@ const columns: ColumnDef<typeof TaxPlain.static, unknown>[] = [
           },
           {
             title: 'Kopyala',
-            action: () =>
-              useToastFetch(`/v1/management/taxes/dupe/${a.renderValue()}`, {
-                fetchOptions: {
-                  method: 'POST',
-                },
-                toastOptions: {
-                  loading: 'Vergi Kopyalanıyor...',
-                  success: 'Vergi Kopyalandı!',
-                  onResult: () => updateState.value++,
-                },
-              }),
+            action: async () => {
+              const res = await client.v1.management.taxes
+                .dupe({ id: a.renderValue() + '' })
+                .post()
+                .catch(useClientError);
+              if (!res) return;
+              useToast('Vergi Kopyalandı!', { type: 'success' });
+              updateState.value++;
+            },
             group: 'default',
             icon: Copy,
           },
           {
             title: 'Sil',
-            action: () =>
-              useToastFetch(`/v1/management/taxes/delete/${a.renderValue()}`, {
-                fetchOptions: {
-                  method: 'DELETE',
-                },
-                toastOptions: {
-                  loading: 'Vergi Siliniyor...',
-                  success: 'Vergi Silindi!',
-                  onResult: () => updateState.value++,
-                },
-              }),
+            action: async () => {
+              const res = await client.v1.management
+                .taxes({ id: a.renderValue() + '' })
+                .delete()
+                .catch(useClientError);
+              if (!res) return;
+              useToast('Vergi Silindi!', { type: 'success' });
+              updateState.value++;
+            },
             group: 'danger',
             icon: Trash2,
             type: 'destructive',

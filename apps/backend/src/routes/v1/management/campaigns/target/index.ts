@@ -14,7 +14,6 @@ export default new Elysia()
   .use(authMacro)
   .use(globals)
   .use(model)
-  .use(handleError)
   .guard({
     auth: true,
     detail: {

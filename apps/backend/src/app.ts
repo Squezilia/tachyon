@@ -20,8 +20,10 @@ import availability from './routes/v1/management/campaigns/availability';
 import stocks from './routes/v1/inventory/stocks';
 import products from './routes/v1/inventory/products';
 import categories from './routes/v1/inventory/categories';
+import { handleError } from '@backend/lib/error';
 
 export const app = new Elysia()
+  .use(handleError)
   .use(wrap(logger))
   .use(
     cors({

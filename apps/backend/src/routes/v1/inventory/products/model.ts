@@ -7,6 +7,12 @@ import {
 } from '@database/prismabox';
 import Elysia, { t } from 'elysia';
 
+export const ProductRaw = t.Object({
+  name: t.String(),
+  id: t.String(),
+  price: t.String(),
+});
+
 export const ProductListItem = t.Composite([
   ProductPlain,
   t.Object({ category: CategoryPlain }),
@@ -15,13 +21,7 @@ export const ProductListItem = t.Composite([
 export default new Elysia().model({
   paginatedProduct: PaginateResponse(ProductListItem),
   productListItem: ProductListItem,
-  productListRaw: t.Array(
-    t.Object({
-      name: t.String(),
-      id: t.String(),
-      price: t.String(),
-    })
-  ),
+  productListRaw: t.Array(ProductRaw),
   product: ProductPlain,
   productCreate: t.Composite([
     ProductPlainInputCreate,

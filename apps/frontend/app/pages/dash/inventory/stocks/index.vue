@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Eye, Trash2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
-import type { StockListItem } from '@backend/routes/v1/inventory/stocks/index.model';
+import type { StockListItem } from '@backend/routes/v1/inventory/stocks/model';
 
 const columns: ColumnDef<typeof StockListItem.static, unknown>[] = [
   {

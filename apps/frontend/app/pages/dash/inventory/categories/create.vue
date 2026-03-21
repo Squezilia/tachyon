@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import type { FormType } from '~/components/resourceForms/CategoryForm.vue';
+import client from '~/lib/api';
 
 definePageMeta({
   middleware: ['auth'],
@@ -18,19 +19,19 @@ const values = ref<FormType>({
   name: '',
 });
 
-function onSubmit(values: FormType) {
-  useToastFetch('/v1/inventory/categories/create', {
-    fetchOptions: {
-      method: 'POST',
-      body: {
-        name: values.name,
-      },
-    },
-    toastOptions: {
-      success: 'Kategori Oluşturuldu!',
-      loading: 'Kategori Oluşturuluyor...',
-      callback: '/dash/inventory/categories',
-    },
+async function onSubmit(values: FormType) {
+  if (!values.name) return;
+
+  const res = await client.v1.inventory.categories
+    .post({
+      name: values.name,
+    })
+    .catch(useClientError);
+
+  if (!res) return;
+
+  useToast('Kategori Oluşturuldu!', {
+    type: 'success',
   });
 }
 
