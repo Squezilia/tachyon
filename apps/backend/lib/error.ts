@@ -110,7 +110,7 @@ export function InterceptPrismaError(error: unknown): never {
   });
 }
 
-export const catchPrismaError = new Elysia()
+export const handleError = new Elysia()
   .error({ PRISMA_ERROR: PrismaFlowError })
   .onError(({ code, error, status }) => {
     if (code === 'PRISMA_ERROR') {

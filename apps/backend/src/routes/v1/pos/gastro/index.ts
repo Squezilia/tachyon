@@ -3,7 +3,7 @@ import { authMacro } from '@backend/lib/auth';
 import tr from '@/i18n/tr';
 import prisma from '@database';
 import {
-  catchPrismaError,
+  handleError,
   InterceptPrismaError,
   ErrorReferences,
 } from '@backend/lib/error';
@@ -17,7 +17,7 @@ export default new Elysia()
   .use(authMacro)
   .use(globals)
   .use(model)
-  .use(catchPrismaError)
+  .use(handleError)
   .post(
     '/',
     async ({ session, status, request: { headers }, body }) => {

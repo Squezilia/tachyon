@@ -2,7 +2,7 @@ import tr from '@/i18n/tr';
 import Elysia, { ElysiaCustomStatusResponse } from 'elysia';
 import { authMacro } from '@backend/lib/auth';
 import {
-  catchPrismaError,
+  handleError,
   InterceptPrismaError,
   ErrorReferences,
 } from '@backend/lib/error';
@@ -15,7 +15,7 @@ export default new Elysia()
   .use(authMacro)
   .use(globals)
   .use(model)
-  .use(catchPrismaError)
+  .use(handleError)
   .post(
     '/',
     async ({ request: { headers }, status, body, session }) => {
@@ -44,6 +44,7 @@ export default new Elysia()
       },
       body: 'categoryCreate',
       response: {
+        ...ErrorReferences,
         201: 'category',
         400: 'error',
       },
@@ -95,9 +96,8 @@ export default new Elysia()
         security: [{ CookieAuth: [] }],
       },
       response: {
+        ...ErrorReferences,
         201: 'category',
-        400: 'error',
-        404: 'error',
       },
     }
   )

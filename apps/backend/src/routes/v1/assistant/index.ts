@@ -5,7 +5,7 @@ import { generateText } from 'ai';
 import Elysia from 'elysia';
 import model from './model';
 import {
-  catchPrismaError,
+  handleError,
   InterceptPrismaError,
   ErrorReferences,
 } from '@backend/lib/error';
@@ -19,7 +19,7 @@ export default new Elysia()
   .use(authMacro)
   .use(globals)
   .use(model)
-  .use(catchPrismaError)
+  .use(handleError)
   .get(
     '/chat',
     async ({ session, query }) => {

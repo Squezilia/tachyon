@@ -2,7 +2,7 @@ import tr from '@/i18n/tr';
 import Elysia, { ElysiaCustomStatusResponse } from 'elysia';
 import { authMacro } from '@backend/lib/auth';
 import {
-  catchPrismaError,
+  handleError,
   InterceptPrismaError,
   ErrorReferences,
 } from '@backend/lib/error';
@@ -14,7 +14,7 @@ export default new Elysia()
   .use(authMacro)
   .use(globals)
   .use(model)
-  .use(catchPrismaError)
+  .use(handleError)
   .guard({
     auth: true,
     detail: {
