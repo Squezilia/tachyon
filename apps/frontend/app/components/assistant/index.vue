@@ -2,29 +2,17 @@
 import { motion } from 'motion-v';
 import type { AssistantMode, AssistantModel } from './InputBox.vue';
 import type { Chat } from '@database/prisma';
-import type { ErrorResponseSchema } from '@backend/model';
-import type { allowedModels } from '@backend/routes/v1/assistant/index.model';
+import type { allowedModels } from '@backend/routes/v1/assistant/model';
 import ChatsList from './ChatsList.vue';
 import InputBox from './InputBox.vue';
 import type { UIChatMessage } from './Chat.vue';
-import type { ChatPlain, MessagePlain } from '@database/prismabox';
 import { ArrowLeft } from 'lucide-vue-next';
 import DetailHeading from '../DetailHeading.vue';
+import client from '~/lib/api';
 
 defineProps<{
   toggle?: boolean;
 }>();
-
-type MessagesResponse = {
-  data: Array<typeof MessagePlain.static>;
-  meta: {
-    cursor?: string;
-    nextCursor?: string;
-    cursorLength: number;
-  };
-};
-
-const { $api } = useNuxtApp();
 
 const assistantMode = ref<AssistantMode>('chat');
 const assistantModel = ref<AssistantModel>('gemma-3-27b-it');
@@ -47,14 +35,9 @@ async function submit(content: string) {
 }
 
 async function createChat() {
-  chat.value = await $api<Chat>(`/v1/assistant/chat`, {
-    method: 'POST',
-    onResponseError({ response }) {
-      if (response.ok) return;
-      const body = response._data as typeof ErrorResponseSchema.static;
-      useToast(body.error, { type: 'error' });
-    },
-  });
+  const res = await client.v1.assistant.chat.post().catch(useClientError);
+  if (!res || !res.data) return;
+  chat.value = res.data;
 }
 
 async function sendMessage(
@@ -69,63 +52,46 @@ async function sendMessage(
   running.value = true;
   abortController = new AbortController();
 
-  const res = await $api<ReadableStream>(
-    `/v1/assistant/chat/${chat.value.id}/message`,
-    {
-      method: 'POST',
-      body: {
-        prompt: message,
-        model,
-      },
-      responseType: 'stream',
-      signal: abortController.signal,
-    }
-  );
+  const res = await client.v1.assistant
+    .chat({ id: chat.value.id })
+    .message.post(
+      { prompt: message, model },
+      { fetch: { signal: abortController.signal } }
+    )
+    .catch(useClientError);
+  if (!res || !res.data) return;
 
   history.value.push({
     sender: 'model',
     content: '',
   });
 
-  const decoder = new TextDecoder();
+  for await (const chunk of res.data) {
+    const lastMessage = history.value[history.value.length - 1];
+    if (!lastMessage) return;
+    lastMessage.content += chunk;
+  }
 
-  const reader = res.getReader();
-
-  reader.read().then(function processText({ done, value }) {
-    if (value) {
-      const lastMessage = history.value[history.value.length - 1];
-      if (!lastMessage) return;
-      lastMessage.content += decoder.decode(value);
-    }
-
-    if (done) {
-      (async () => {
-        if (isFirstMessage)
-          chat.value = await $api<typeof ChatPlain.static>(
-            `/v1/assistant/chat/${chat.value?.id}`
-          );
-      })();
-      running.value = false;
-      return;
-    }
-
-    reader.read().then(processText);
-  });
+  if (isFirstMessage) {
+    const chatRes = await client.v1.assistant
+      .chat({ id: chat.value.id })
+      .get()
+      .catch(useClientError);
+    if (!chatRes || !chatRes.data) return;
+    chat.value = chatRes.data;
+  }
 }
 
 async function fetchMessages() {
   if (!chat.value) return;
-  const response = await $api<MessagesResponse>(
-    `/v1/assistant/chat/${chat.value.id}/message`,
-    {
-      cache: 'no-cache',
-      query: { cursor: messageCursor.value || undefined },
-    }
-  );
-  if (!response) return;
+  const res = await client.v1.assistant
+    .chat({ id: chat.value.id })
+    .message.get()
+    .catch(useClientError);
+  if (!res || !res.data) return;
 
   history.value = [
-    ...response.data
+    ...res.data.data
       .map(
         (message) =>
           ({
@@ -141,8 +107,8 @@ async function fetchMessages() {
     ...history.value,
   ];
 
-  if (!response.meta.nextCursor) return (hasMoreMessages.value = false);
-  messageCursor.value = response.meta.nextCursor;
+  if (!res.data.meta.nextCursor) return (hasMoreMessages.value = false);
+  messageCursor.value = res.data.meta.nextCursor;
   hasMoreMessages.value = true;
 }
 

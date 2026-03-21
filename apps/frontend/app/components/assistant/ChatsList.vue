@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import type { Chat } from '@database/prisma';
-import type { ChatPlain } from '@database/prismabox';
-import type { ServerPaginate } from '../DataTable.vue';
 import { ArrowDown, Loader2 } from 'lucide-vue-next';
+import client from '~/lib/api';
 
 const emit = defineEmits<{
   select: [Chat];
 }>();
-
-const { $api } = useNuxtApp();
 
 const chats = ref<Chat[]>([]);
 
@@ -20,16 +17,18 @@ const selectedChatId = ref<string | null>(null);
 
 async function getChats() {
   loadingChats.value = true;
-  const data = await $api<ServerPaginate<typeof ChatPlain.static>>(
-    '/v1/assistant/chat',
-    { query: { page: chatsPage.value, max: 8 } }
-  );
-  if (!data) return;
+  const chatsRes = await client.v1.assistant.chat
+    .get({ query: { page: chatsPage.value, max: 8 } })
+    .catch(useClientError);
+  if (!chatsRes || !chatsRes.data) return;
 
-  if (data.meta.page >= Math.ceil(data.meta.total / data.meta.max))
+  if (
+    chatsRes.data.meta.page >=
+    Math.ceil(chatsRes.data.meta.total / chatsRes.data.meta.max)
+  )
     hasMoreChats.value = false;
   else hasMoreChats.value = true;
-  chats.value = chats.value.concat(data.data);
+  chats.value = chats.value.concat(chatsRes.data.data);
 
   loadingChats.value = false;
 }
@@ -37,8 +36,14 @@ async function getChats() {
 async function selectChat(id: string) {
   selectedChatId.value = id;
   selectedChatLoading.value = true;
-  const data = await $api<typeof ChatPlain.static>(`/v1/assistant/chat/${id}`);
-  emit('select', data);
+
+  const selectedChatRes = await client.v1.assistant
+    .chat({ id })
+    .get()
+    .catch(useClientError);
+  if (!selectedChatRes || !selectedChatRes.data) return;
+
+  emit('select', selectedChatRes.data);
   selectedChatLoading.value = false;
 }
 

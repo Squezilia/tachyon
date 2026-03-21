@@ -88,6 +88,7 @@ const columns: ColumnDef<typeof TablePlain.static, unknown>[] = [
                 .catch(useClientError);
               if (!res) return;
               useToast('Masa Silindi!', { type: 'success' });
+              updateState.value++;
             },
             group: 'danger',
             icon: Trash2,

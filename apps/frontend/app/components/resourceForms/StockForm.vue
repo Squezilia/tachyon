@@ -13,11 +13,11 @@ import {
 import formatPrice from '@/lib/formatPrice';
 import * as z from 'zod';
 import { Field } from '~/components/ui/field';
-
-type ProductOption = { name: string; id: string; price: string };
+import client from '~/lib/api';
+import type { ProductRaw } from '@backend/routes/v1/inventory/products/model';
 
 const router = useRouter();
-const products = ref<ProductOption[]>([]);
+const products = ref<(typeof ProductRaw.static)[]>([]);
 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
 
 const formSchema = z.object({
@@ -42,25 +42,12 @@ defineEmits<{
 }>();
 
 onMounted(async () => {
-  const productList = await useNuxtApp().$api(
-    '/v1/inventory/products/get/raw',
-    {
-      credentials: 'include',
-      async onRequestError(context) {
-        if (!context.response) return;
-        if (context.response.status >= 400 || context.response.status < 500) {
-          const body = (await context.response.json()) as {
-            error: string;
-            reason: string;
-          };
+  const res = await client.v1.inventory.products.raw
+    .get()
+    .catch(useClientError);
+  if (!res || !res.data) return;
 
-          useToast(body.error, { description: body.reason, type: 'error' });
-        }
-      },
-    }
-  );
-
-  products.value = productList as ProductOption[];
+  products.value = res.data;
 });
 </script>
 

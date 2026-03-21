@@ -11,6 +11,8 @@ import {
   NumberFieldDecrement,
   NumberFieldIncrement,
 } from '~/components/ui/number-field';
+import type { CategoryRaw } from '@backend/routes/v1/inventory/categories/model';
+import client from '~/lib/api';
 
 const formSchema = z.object({
   name: z
@@ -37,13 +39,15 @@ defineEmits<{
   'update:isSubmitting': [boolean];
 }>();
 
-const categoryList = (await useNuxtApp()
-  .$api('/v1/inventory/categories/get/raw', {
-    credentials: 'include',
-  })
-  .catch((err: { error: string; reason: string }) => {
-    useToast(err.error, { description: err.reason, type: 'error' });
-  })) as { name: string; id: string }[];
+const categoryList = ref<(typeof CategoryRaw.static)[]>([]);
+
+onMounted(async () => {
+  const res = await client.v1.inventory.categories.raw
+    .get()
+    .catch(useClientError);
+  if (!res || !res.data) return;
+  categoryList.value = res.data;
+});
 </script>
 
 <template>

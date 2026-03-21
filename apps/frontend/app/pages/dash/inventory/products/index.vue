@@ -93,6 +93,7 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
               if (!res) return;
 
               useToast('Ürün Kopyalandı!', { type: 'success' });
+              updateState.value++;
             },
             group: 'default',
             icon: Copy,
@@ -108,6 +109,7 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
               if (!res) return;
 
               useToast('Ürün Silindi!', { type: 'success' });
+              updateState.value++;
             },
             group: 'danger',
             icon: Trash2,

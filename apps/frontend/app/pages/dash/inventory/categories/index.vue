@@ -65,7 +65,6 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
                 })
                 .post()
                 .catch(useClientError);
-
               if (!res) return;
 
               useToast('Kategori Kopyalandı!', {
@@ -83,8 +82,10 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
                 .categories({ id: a.renderValue() + '' })
                 .delete()
                 .catch(useClientError);
+              if (!res) return;
 
-              if (res) useToast('Kategori Silindi!', { type: 'success' });
+              useToast('Kategori Silindi!', { type: 'success' });
+              updateState.value++;
             },
             group: 'danger',
             icon: Trash2,
