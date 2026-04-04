@@ -1,5 +1,7 @@
 # Tachyon
 
+<img width="1280" height="640" alt="Frame 3(1)" src="https://github.com/user-attachments/assets/cb12f4f1-8648-46fb-85fe-2d9a908bfc2f" />
+
 > Takyonlar (Tachyon) ışık hızından daha hızlı giden teorik parçacıklardır.
 
 Tachyon, standart kullanıcının yüksek kalite ERP'ye erişebilmesi için geliştirilmiş bir projedir. AI, POS, Envanter, Analitik modülleri ve Eklenti yapısı sayesinde her duruma adapte olmaya çalışır.
