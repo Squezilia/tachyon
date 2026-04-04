@@ -10,6 +10,14 @@ Bütün modüller varsayılan olarak açık gelir. Sistemin çekirdeğini oluşt
 ### AI (Artifical-Intelligence)
 AI Modülü sistemin geneline hakimdir. `Chat` moduyla sorular sorulabilir veya `Agent` moduyla eylemler yaptırılabilir.
 
+#### Akıllı Model Yönlendirme
+
+Tachyon, gelen her promptu kullanıcıya sormadan otomatik olarak doğru model katmanına yönlendirir. Bunun için özel olarak eğitilmiş küçük bir sınıflandırıcı kullanılır: [`tachyon-router-v1-mini`](https://huggingface.co/Squezilia/tachyon-router-v1-mini)
+
+Sınıflandırıcı promptu 4 karmaşıklık seviyesinden birine atar (`trivial` → `simple` → `analysis` → `complex`) ve bu seviyeye karşılık gelen modeli seçer. Böylece basit sorgular gereksiz yere güçlü modellere gönderilmez; maliyet düşer, yanıt hızlanır.
+
+Router; 13.7M parametreli bir ELECTRA modelidir, FP16 ile 26.2MB'tır ve TransformersJS aracılığıyla doğrudan tarayıcıda çalışır — sunucuya ek yük bindirmez.
+
 #### Yetki Yönetimi
 Yapay Zeka sistemin geneline hakim olsa bile her konuda izin sahibi değildir. `Chat` modunda sadece `read` izinlerine sahipken `Agent` modunda ise `read` `create` `update` izinlerine sahiptir.
 
