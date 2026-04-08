@@ -10,7 +10,7 @@
       <Kbd> P </Kbd>
     </KbdGroup>
   </button>
-  <CommandDialog v-model:open="open">
+  <LazyCommandDialog v-model:open="open">
     <CommandInput placeholder="Komutları Kullan.." />
     <CommandList>
       <CommandEmpty>No results found.</CommandEmpty>
@@ -37,7 +37,7 @@
         <CommandSeparator />
       </template>
     </CommandList>
-  </CommandDialog>
+  </LazyCommandDialog>
 </template>
 
 <script lang="ts" setup>

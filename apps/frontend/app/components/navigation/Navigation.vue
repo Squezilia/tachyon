@@ -109,10 +109,12 @@ const sideView = useSideView();
           size="icon"
           @click="sideView.toggle('chat')"
         >
-          <Icon
-            name="fluent:chat-sparkle-16-filled"
-            class="size-5 group-data-[active=true]/toggleButton:text-primary-foreground"
-          />
+          <ClientOnly>
+            <Icon
+              name="fluent:chat-sparkle-16-filled"
+              class="size-5 group-data-[active=true]/toggleButton:text-primary-foreground"
+            />
+          </ClientOnly>
         </button>
       </TooltipSimplified>
     </div>

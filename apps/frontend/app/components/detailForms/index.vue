@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { motion } from 'motion-v';
 import CategoryDetail from './CategoryDetail.vue';
 import ProductDetail from './ProductDetail.vue';
-import type { Component } from 'vue';
 
 defineEmits<{
   close: [];

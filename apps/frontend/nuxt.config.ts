@@ -68,6 +68,37 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/tailwind.css'],
   vite: {
+    optimizeDeps: {
+      include: [
+        '@vee-validate/zod',
+        'vee-validate',
+        'zod',
+        'vaul-vue',
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+        '@vueuse/core',
+        'howler', // CJS
+        '@huggingface/transformers',
+        'lucide-vue-next',
+        'vue-sonner',
+        'clsx',
+        'tailwind-merge',
+        'better-auth/vue',
+        'better-auth/client/plugins',
+        '@elysiajs/eden',
+        '@tanstack/vue-table',
+        'class-variance-authority',
+        'reka-ui',
+        'markdown-it',
+        '@vscode/markdown-it-katex', // CJS
+        'markdown-it-sub',
+        'markdown-it-footnote',
+        'markdown-it-task-lists', // CJS
+        'markdown-it-emoji',
+        'markdown-it-anchor',
+        'markdown-it-container',
+      ],
+    },
     plugins: [tsconfigPaths(), tailwindcss()],
   },
 

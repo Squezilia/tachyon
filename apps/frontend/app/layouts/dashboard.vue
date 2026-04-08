@@ -9,7 +9,7 @@ const sideView = useSideView();
   <TooltipProvider :delay-duration="800">
     <main>
       <ClientOnly>
-        <Sidepanel :toggle="sideView.active.value || false">
+        <LazySidepanel :toggle="sideView.active.value || false">
           <motion.div
             v-if="sideView.view.value === 'chat'"
             :initial="{ opacity: 0 }"
@@ -22,7 +22,7 @@ const sideView = useSideView();
             }"
             class="flex flex-col h-full"
           >
-            <Assistant />
+            <LazyAssistant />
           </motion.div>
           <motion.div
             v-else
@@ -36,9 +36,9 @@ const sideView = useSideView();
             }"
             class="flex flex-col h-full"
           >
-            <DetailForms />
+            <LazyDetailForms />
           </motion.div>
-        </Sidepanel>
+        </LazySidepanel>
       </ClientOnly>
       <Navigation />
       <div

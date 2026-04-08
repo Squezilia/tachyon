@@ -60,7 +60,7 @@ const dropdownState = ref(false);
 </script>
 
 <template>
-  <DropdownMenu v-model:open="dropdownState">
+  <LazyDropdownMenu v-model:open="dropdownState">
     <DropdownMenuTrigger as-child>
       <button
         class="size-6.5 absolute top-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer rounded-md hover:bg-accent transition"
@@ -112,5 +112,5 @@ const dropdownState = ref(false);
         </AlertDialog>
       </template>
     </DropdownMenuContent>
-  </DropdownMenu>
+  </LazyDropdownMenu>
 </template>
