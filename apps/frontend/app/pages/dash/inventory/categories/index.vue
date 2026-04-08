@@ -17,6 +17,7 @@ import toLocaleDate from '~/lib/toLocaleDate';
 import DataTableActions from '~/components/DataTableActions.vue';
 
 const updateState = ref(0);
+const detailsView = useDetailsView();
 
 const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
   {
@@ -44,14 +45,18 @@ const columns: ColumnDef<typeof CategoryPlain.static, unknown>[] = [
         actions: [
           {
             title: 'Detaylar',
-            action: () => {},
+            action: () => {
+              detailsView.open(a.renderValue() + '', 'category');
+            },
             group: 'default',
             icon: Eye,
           },
           {
             title: 'Düzenle',
             action: () => {
-              useRouter().push(`/dash/inventory/categories/${a.renderValue()}`);
+              useRouter().push(
+                `/dash/inventory/categories/${a.renderValue()}/update`
+              );
             },
             group: 'default',
             icon: Edit3,

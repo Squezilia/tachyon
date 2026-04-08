@@ -1,10 +1,45 @@
 <script setup lang="ts">
+import { motion } from 'motion-v';
 import Navigation from '~/components/navigation/Navigation.vue';
+
+const sideView = useSideView();
 </script>
 
 <template>
   <TooltipProvider :delay-duration="800">
     <main>
+      <ClientOnly>
+        <Sidepanel :toggle="sideView.active.value || false">
+          <motion.div
+            v-if="sideView.view.value === 'chat'"
+            :initial="{ opacity: 0 }"
+            :animate="{ opacity: 100 }"
+            :exit="{ opacity: 0 }"
+            :transition="{
+              delay: 0.1,
+              duration: 0.25,
+              ease: [0.33, 1, 0.68, 1],
+            }"
+            class="flex flex-col h-full"
+          >
+            <Assistant />
+          </motion.div>
+          <motion.div
+            v-else
+            :initial="{ opacity: 0 }"
+            :animate="{ opacity: 100 }"
+            :exit="{ opacity: 0 }"
+            :transition="{
+              delay: 0.1,
+              duration: 0.25,
+              ease: [0.33, 1, 0.68, 1],
+            }"
+            class="flex flex-col h-full"
+          >
+            <DetailForms />
+          </motion.div>
+        </Sidepanel>
+      </ClientOnly>
       <Navigation />
       <div
         id="container"

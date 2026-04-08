@@ -136,9 +136,13 @@ export default new Elysia()
 
       if (!order) return status(404, tr.error.gastro.order.notFound);
 
-      const leftovers: Record<string, number | undefined> = {
-        ...body.stocks,
-      };
+      const oldProductsMap = new Map(order.products.map((p) => [p.stockId, p]));
+
+      const allStockIds = new Set([
+        ...oldProductsMap.keys(),
+        ...Object.keys(body.stocks),
+      ]);
+
       const diffTable: Record<
         string,
         {
@@ -152,67 +156,23 @@ export default new Elysia()
         }
       > = {};
 
-      const oldTable: Record<string, boolean> = {};
+      for (const stockId of allStockIds) {
+        const oldProduct = oldProductsMap.get(stockId);
+        const newVal = body.stocks[stockId] ?? 0; // Body'de yoksa 0 (silinmiş demektir)
+        const oldVal = oldProduct?.quantity ?? 0; // DB'de yoksa 0 (yeni eklenmiş demektir)
 
-      for (const cartProduct of order.products) {
-        const oldVal = cartProduct.quantity;
-        const newVal = body.stocks[cartProduct.stockId];
+        // Eğer miktar değişmediyse işleme gerek yok
+        if (oldVal === newVal && oldProduct) continue;
 
-        oldTable[cartProduct.stockId] = true;
-
-        // new value is exists so we can calculate our diff
-        if (newVal) {
-          const diff = newVal - oldVal;
-          leftovers[cartProduct.stockId] = undefined;
-          diffTable[cartProduct.stockId] = {
-            change: diff,
-            to: newVal,
-            cartId: cartProduct.id,
-            taxes: cartProduct.appliedTaxes,
-            sub: cartProduct.sub,
-            total: cartProduct.total,
-            tax: cartProduct.tax,
-          };
-          continue;
-        }
-
-        // new value isn't exists, that means this key is deleted
-        if (!newVal) {
-          const diff = -oldVal;
-          leftovers[cartProduct.stockId] = undefined;
-          diffTable[cartProduct.stockId] = {
-            change: diff,
-            to: 0,
-            cartId: cartProduct.id,
-            taxes: cartProduct.appliedTaxes,
-            sub: cartProduct.sub,
-            total: cartProduct.total,
-            tax: cartProduct.tax,
-          };
-          continue;
-        }
-      }
-
-      for (const key of Object.keys(leftovers)) {
-        const newVal = body.stocks[key];
-        if (!newVal) continue;
-
-        // old value doesn't exists so that means this key is added
-        if (!oldTable[key]) {
-          leftovers[key] = undefined;
-          diffTable[key] = {
-            change: newVal,
-            to: newVal,
-            cartId: v7(),
-            taxes: [],
-            sub: Prisma.Decimal(0),
-            total: Prisma.Decimal(0),
-            tax: Prisma.Decimal(0),
-          };
-          continue;
-        }
-
-        // we don't have to do new value checks because they're already completed previous loop
+        diffTable[stockId] = {
+          change: newVal - oldVal,
+          to: newVal,
+          cartId: oldProduct?.id ?? v7(),
+          taxes: oldProduct?.appliedTaxes ?? [],
+          sub: oldProduct?.sub ?? new Prisma.Decimal(0),
+          total: oldProduct?.total ?? new Prisma.Decimal(0),
+          tax: oldProduct?.tax ?? new Prisma.Decimal(0),
+        };
       }
 
       const stocks = await prisma.stock

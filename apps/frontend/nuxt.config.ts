@@ -24,6 +24,7 @@ export default defineNuxtConfig({
         skipLibCheck: true,
 
         baseUrl: '.',
+        rootDir: '../',
         paths: {
           '@backend': ['../../backend/dist/src/app.d.ts'],
           '@backend/*': ['../../backend/dist/src/*'],
@@ -37,10 +38,13 @@ export default defineNuxtConfig({
           '@database/prisma': ['../../../packages/database/dist/prisma/client'],
         },
       },
+      exclude: ['../../backend/dist/**/*'],
+      include: ['../app/**/*'],
     },
   },
 
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: {
       htmlAttrs: {
         lang: 'tr',
@@ -59,6 +63,7 @@ export default defineNuxtConfig({
     '@nuxt/image',
     'shadcn-nuxt',
     'motion-v/nuxt',
+    '@nuxt/hints',
   ],
 
   css: ['~/assets/css/tailwind.css'],

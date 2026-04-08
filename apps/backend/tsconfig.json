@@ -24,7 +24,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@frontend/*": ["../frontend/app/*"],
-      "@backend": ["src/main.ts"],
+      "@backend": ["./src/main.ts"],
       "@backend/*": ["./src/*"],
       "@backend/lib/*": ["./lib/*"],
 
@@ -32,7 +32,9 @@
       "@database/*": ["../../packages/database/dist/*"],
       "@database/prismabox": ["../../packages/database/dist/prismabox/barrel"],
       "@database/prisma": ["../../packages/database/dist/prisma/client"]
-    }
+    },
+
+    "ignoreDeprecations": "5.0"
   },
   "include": ["src", "test", "scripts", "lib"],
   "exclude": ["node_modules", "dist"]

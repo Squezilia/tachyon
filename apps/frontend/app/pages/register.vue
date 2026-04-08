@@ -87,7 +87,6 @@ const { handleSubmit } = useForm({
 const onSubmit = handleSubmit((values) => {
   authClient.signUp.email({
     ...values,
-    callbackURL: '/',
     fetchOptions: {
       onError(context) {
         useToast(context.error.name, {

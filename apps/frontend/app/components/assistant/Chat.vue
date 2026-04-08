@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { AssistantMessageSender } from '@database/prisma/enums';
+
 const props = defineProps<{
   history: UIChatMessage[];
   hasMoreMessages: boolean;
@@ -64,7 +66,7 @@ function change() {
 }
 
 export interface UIChatMessage {
-  sender: 'user' | 'system' | 'model';
+  sender: AssistantMessageSender;
   content: string;
 }
 </script>
@@ -84,7 +86,7 @@ export interface UIChatMessage {
         class="group/message"
       >
         <div
-          v-if="message.sender == 'user'"
+          v-if="message.sender == 'USER'"
           class="p-1.5 bg-primary text-primary-foreground text-sm rounded-lg rounded-tr-sm w-fit ml-auto px-2"
         >
           <MarkdownContent

@@ -15,8 +15,10 @@ import {
 import DataTableActions from '~/components/DataTableActions.vue';
 import type { ProductListItem } from '@backend/routes/v1/inventory/products/model';
 import toLocaleDate from '~/lib/toLocaleDate';
+import Chip from '~/components/Chip.vue';
 
 const updateState = ref(0);
+const detailsView = useDetailsView();
 
 const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
   {
@@ -50,12 +52,7 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
     accessorFn: (a) => {
       return a.category.name;
     },
-    cell: (a) =>
-      h(
-        Button,
-        { size: 'sm', variant: 'outline', class: 'text-xs px-2 h-6' },
-        { default: () => a.renderValue() }
-      ),
+    cell: (a) => h(Chip, a.renderValue),
   },
   {
     accessorKey: 'createdAt',
@@ -70,14 +67,18 @@ const columns: ColumnDef<typeof ProductListItem.static, unknown>[] = [
         actions: [
           {
             title: 'Detaylar',
-            action: () => {},
+            action: () => {
+              detailsView.open(a.renderValue() + '', 'product');
+            },
             group: 'default',
             icon: Eye,
           },
           {
             title: 'Düzenle',
             action: () => {
-              useRouter().push(`/dash/inventory/products/${a.renderValue()}`);
+              useRouter().push(
+                `/dash/inventory/products/${a.renderValue()}/update`
+              );
             },
             group: 'default',
             icon: Edit3,

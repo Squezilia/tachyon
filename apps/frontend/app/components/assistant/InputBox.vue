@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUp, Check, ChevronDown, Plus, X } from 'lucide-vue-next';
+import { ArrowUp, Check, ChevronDown, Loader2, Plus, X } from 'lucide-vue-next';
 import type { PropType } from 'vue';
 
 const props = defineProps<{
@@ -8,14 +8,20 @@ const props = defineProps<{
 
 const modes = { agent: 'Agent', chat: 'Sohbet' };
 const models = {
-  'gemma-3-27b-it': 'Gemma 3 (High)',
-  'gemini-2.5-flash': 'Gemini 2.5 Flash',
   'gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
-  'gemma-3-12b-it': 'Gemma 3 (Low)',
+  'gemini-2.5-flash': 'Gemini 2.5 Flash',
+  'gemini-3-flash-preview': 'Gemini 3 Flash',
+  'gemini-3-pro-preview': 'Gemini 3 Pro',
 };
 
 export type AssistantMode = keyof typeof modes;
 export type AssistantModel = keyof typeof models;
+export type UIAssistantModel = AssistantModel | 'auto-model';
+
+const uiModels = {
+  ...models,
+  'auto-model': 'Auto',
+};
 
 const assistantMode = defineModel('mode', {
   type: String as PropType<AssistantMode>,
@@ -23,8 +29,8 @@ const assistantMode = defineModel('mode', {
   required: true,
 });
 const assistantModel = defineModel('model', {
-  type: String as PropType<AssistantModel>,
-  default: 'gemma-3-27b-it',
+  type: String as PropType<UIAssistantModel>,
+  default: 'auto-model',
   required: true,
 });
 
@@ -58,7 +64,7 @@ function submit(ev?: KeyboardEvent) {
 </script>
 
 <template>
-  <InputGroup class="max-w-2xl mx-auto">
+  <InputGroup class="max-w-2xl mx-auto rounded-xl">
     <InputGroupAddon v-if="false" align="block-start">
       <ChatContextChip> <Plus /> İçerik Ekle </ChatContextChip>
       <ChatContextChip v-for="context in contextList" :key="context.id">
@@ -100,22 +106,42 @@ function submit(ev?: KeyboardEvent) {
         <DropdownMenuTrigger as-child>
           <InputGroupButton variant="ghost" aria-label="More" size="xs">
             <span class="text-xs">
-              {{ models[assistantModel as AssistantModel] }}
+              {{ uiModels[assistantModel as UIAssistantModel] }}
             </span>
             <ChevronDown />
           </InputGroupButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem
-            v-for="[modelId, locale] of Object.entries(models)"
+            v-for="[modelId, locale] of Object.entries(uiModels)"
             :key="modelId"
+            :disabled="
+              modelId === 'auto-model' &&
+              $tachyRouter.routerState.value !== 'success'
+            "
             @click="
               () => {
-                assistantModel = modelId as AssistantModel;
+                assistantModel = modelId as UIAssistantModel;
               }
             "
             >{{ locale }}
-            <Check v-if="assistantModel == modelId" class="ml-auto" />
+            <Loader2
+              v-if="
+                $tachyRouter.routerState.value === 'loading' &&
+                modelId === 'auto-model'
+              "
+              class="size-4 ml-auto animate-spin"
+            />
+            <Check
+              v-if="
+                assistantModel == modelId &&
+                !(
+                  $tachyRouter.routerState.value === 'loading' &&
+                  modelId === 'auto-model'
+                )
+              "
+              class="ml-auto"
+            />
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -123,6 +149,11 @@ function submit(ev?: KeyboardEvent) {
         class="rounded-full ml-auto"
         variant="default"
         size="icon-xs"
+        :disabled="
+          content.length <= 0 ||
+          (assistantModel === 'auto-model' &&
+            $tachyRouter.routerState.value !== 'success')
+        "
         @click="running ? emit('abort') : submit()"
       >
         <Icon v-if="running" name="fluent:stop-16-filled" />

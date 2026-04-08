@@ -1,19 +1,28 @@
 import google from '@backend/lib/ai';
 import { authMacro } from '@backend/lib/auth';
 import prisma from '@database';
-import { generateText } from 'ai';
-import Elysia from 'elysia';
-import model from './model';
 import {
-  handleError,
-  InterceptPrismaError,
-  ErrorReferences,
-} from '@backend/lib/error';
+  AssistantModelMessage,
+  generateText,
+  streamText,
+  SystemModelMessage,
+  ToolModelMessage,
+  UserModelMessage,
+} from 'ai';
+import Elysia from 'elysia';
+import model, { SenderToRole } from './model';
+import { InterceptPrismaError, ErrorReferences } from '@backend/lib/error';
 import { v7 } from 'uuid';
 import globals from '@/globals';
 import tr from '@/i18n/tr';
 import { Prisma } from '@database/prisma';
-import { AISDKMessage, createInferenceStream } from './service';
+import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+
+export type AISDKMessage =
+  | SystemModelMessage
+  | UserModelMessage
+  | AssistantModelMessage
+  | ToolModelMessage;
 
 export default new Elysia()
   .use(authMacro)
@@ -169,7 +178,7 @@ export default new Elysia()
   )
   .post(
     '/chat/:id/message',
-    async function ({ params, session, status, body }) {
+    async function ({ params, session, status, body, set }) {
       const AI_MAX_MESSAGE_PAGE_SIZE = 40;
 
       const chat = await prisma.chat
@@ -209,43 +218,35 @@ export default new Elysia()
           .catch(InterceptPrismaError);
       }
 
+      const userMessageId = v7();
       const inferenceMessageId = v7();
 
-      const messageBatch = await prisma.message
+      await prisma.message
         .createMany({
           data: [
             {
+              id: userMessageId,
               chatId: chat.id,
               content: body.prompt,
-              senderId: session.userId,
+              sender: 'USER',
+              userId: session.userId,
             },
             {
               id: inferenceMessageId,
               chatId: chat.id,
+              sender: 'AGENT',
               content: '',
             },
           ],
         })
         .catch(InterceptPrismaError);
 
-      const mappedMessages = chat.messages.map((message): AISDKMessage => {
-        if (message.senderId) {
-          return {
-            role: 'user',
-            content: message.content,
-          };
-        } else if (message.isSystemMessage) {
-          return {
-            role: 'system',
-            content: message.content,
-          };
-        }
-
+      const mappedMessages = chat.messages.map((message) => {
         return {
-          role: 'assistant',
+          role: SenderToRole[message.sender],
           content: message.content,
         };
-      });
+      }) as AISDKMessage[];
 
       mappedMessages.push({
         role: 'user',
@@ -254,12 +255,35 @@ export default new Elysia()
 
       const model = google(body.model);
 
-      return createInferenceStream(
-        inferenceMessageId,
-        chat.id,
-        model,
-        mappedMessages
-      );
+      const inference = streamText({
+        model: model,
+        providerOptions: {
+          google: {} satisfies GoogleGenerativeAIProviderOptions,
+        },
+        messages: mappedMessages,
+        async onAbort(event) {
+          await prisma.message.update({
+            where: {
+              id: inferenceMessageId,
+            },
+            data: {
+              content: event.steps.map((step) => step.text).join(' '),
+            },
+          });
+        },
+        async onFinish(inference) {
+          await prisma.message.update({
+            where: {
+              id: inferenceMessageId,
+            },
+            data: {
+              content: inference.text,
+            },
+          });
+        },
+      });
+
+      return inference.textStream;
     },
     {
       auth: true,

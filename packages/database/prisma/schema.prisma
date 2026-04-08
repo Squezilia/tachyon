@@ -132,7 +132,7 @@ model Organization {
   stockMovements StockMovement[]
   tables         Table[]
 
-  // @@unique([slug])
+  @@unique([slug])
   @@map("organization")
 }
 
@@ -425,22 +425,27 @@ enum OrderStatus {
 }
 
 model Payment {
-  id String @id @default(uuid(7))
-
+  id       String        @id @default(uuid(7))
   /// @prismabox.typeOverwrite=t.String()
-  amount Decimal
-  method PaymentMethod
-  status PaymentStatus @default(PENDING)
+  amount   Decimal
+  currency String        @default("TRY")
+  method   PaymentMethod
+  status   PaymentStatus @default(PENDING)
 
-  sell   Sell   @relation(fields: [sellId], references: [id], onDelete: Cascade)
-  sellId String @unique
+  externalId String?
+  metadata   Json?
 
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  orderId String @unique
+  sell   Sell?   @relation(fields: [sellId], references: [id], onDelete: Cascade)
+  sellId String?
+
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String?
 
   createdAt DateTime  @default(now())
   paidAt    DateTime?
 
+  @@index([sellId])
+  @@index([orderId])
   @@index([status, createdAt])
 }
 
@@ -459,7 +464,7 @@ model Sell {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
 
-  payment              Payment?
+  payment              Payment[]
   campaignApplications CampaignApplication[]
 
   issuer   User   @relation(fields: [issuerId], references: [id])
@@ -501,7 +506,7 @@ model Order {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
 
-  payment              Payment?
+  payment              Payment[]
   campaignApplications CampaignApplication[]
 
   issuer   User    @relation(fields: [issuerId], references: [id])
@@ -589,13 +594,20 @@ model Chat {
   messages Message[]
 }
 
+enum AssistantMessageSender {
+  USER
+  AGENT
+  TOOL
+  SYSTEM
+}
+
 model Message {
   id String @id @default(uuid(7))
 
-  isSystemMessage Boolean @default(false)
+  sender AssistantMessageSender @default(USER)
 
-  sender   User?   @relation(fields: [senderId], references: [id])
-  senderId String?
+  user   User?   @relation(fields: [userId], references: [id])
+  userId String? @map("senderId")
 
   content String
 

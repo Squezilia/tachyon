@@ -4,7 +4,6 @@ import NavCommand from './NavCommand.vue';
 import NavOrganization from './NavOrganization.vue';
 import NavTabs from './NavTabs.vue';
 import NavUser from './NavUser.vue';
-import { Assistant } from '#components';
 
 export type Tabs = Record<string, Tab>;
 
@@ -66,7 +65,7 @@ const depthTraversalPath = computed(() => {
   return { traversalTree: traversal, currentTabs: currentTabs };
 });
 
-const assistantToggle = ref(false);
+const sideView = useSideView();
 </script>
 
 <template>
@@ -105,10 +104,10 @@ const assistantToggle = ref(false);
       <NavTabs :tab="depthTraversalPath.currentTabs" />
       <TooltipSimplified class="ml-auto" text="Yapay zeka asistan sohbeti">
         <button
-          :data-active="assistantToggle"
+          :data-active="sideView.active.value && sideView.view.value === 'chat'"
           class="ml-auto mr-4 size-8 transition flex items-center justify-center group/toggleButton hover:bg-accent data-[active=true]:bg-primary rounded-full"
           size="icon"
-          @click="assistantToggle = !assistantToggle"
+          @click="sideView.toggle('chat')"
         >
           <Icon
             name="fluent:chat-sparkle-16-filled"
@@ -116,9 +115,6 @@ const assistantToggle = ref(false);
           />
         </button>
       </TooltipSimplified>
-      <ClientOnly>
-        <Assistant :toggle="assistantToggle" />
-      </ClientOnly>
     </div>
   </div>
 </template>

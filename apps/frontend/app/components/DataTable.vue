@@ -174,7 +174,7 @@ function nextPage() {
       </div>
     </div>
 
-    <div class="border rounded-md overflow-hidden">
+    <div class="border rounded-xl overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow
