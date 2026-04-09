@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import CategoryDetail from './CategoryDetail.vue';
-import ProductDetail from './ProductDetail.vue';
+import type { Component } from 'vue';
 
 defineEmits<{
   close: [];
@@ -17,18 +16,28 @@ export type ResourceType =
   | 'order'
   | 'table';
 
+const ViewTable: Record<ResourceType, Component> = {
+  category: defineAsyncComponent(() => import('./CategoryDetail.vue')),
+  campaign: defineAsyncComponent(() => import('./CampaignDetail.vue')),
+  movement: defineAsyncComponent(() => import('./MovementDetail.vue')),
+  order: defineAsyncComponent(() => import('./OrderDetail.vue')),
+  product: defineAsyncComponent(() => import('./ProductDetail.vue')),
+  sell: defineAsyncComponent(() => import('./SellDetail.vue')),
+  stock: defineAsyncComponent(() => import('./StockDetail.vue')),
+  table: defineAsyncComponent(() => import('./TableDetail.vue')),
+  tax: defineAsyncComponent(() => import('./TaxDetail.vue')),
+};
+
 const detailsView = useDetailsView();
 
 const selectedView = computed(() => {
-  switch (detailsView.resource.value) {
-    case 'category':
-      return CategoryDetail;
+  const res = detailsView.resource.value
+    ? ViewTable[detailsView.resource.value]
+    : null;
 
-    case 'product':
-      return ProductDetail;
-  }
+  if (res === null) detailsView.close();
 
-  return null;
+  return res;
 });
 </script>
 

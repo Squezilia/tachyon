@@ -9,6 +9,8 @@ import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
 import type { StockListItem } from '@backend/routes/v1/inventory/stocks/model';
 
+const detailsView = useDetailsView();
+
 const columns: ColumnDef<typeof StockListItem.static, unknown>[] = [
   {
     header: 'Ürün',
@@ -35,13 +37,18 @@ const columns: ColumnDef<typeof StockListItem.static, unknown>[] = [
     },
   },
   {
+    accessorFn(a) {
+      return a.id;
+    },
     header: 'Eylemler',
-    cell: () =>
+    cell: (a) =>
       h(DataTableActions, {
         actions: [
           {
             title: 'Detaylar',
-            action: () => {},
+            action: () => {
+              detailsView.open(a.renderValue() + '', 'stock');
+            },
             group: 'default',
             icon: Eye,
           },

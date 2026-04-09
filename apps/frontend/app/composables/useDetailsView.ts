@@ -15,5 +15,8 @@ export default function useDetailsView() {
       resource.value = res;
       useSideView().open('details');
     },
+    close() {
+      useSideView().close();
+    },
   };
 }
