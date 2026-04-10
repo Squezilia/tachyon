@@ -4,6 +4,7 @@ import prisma from '@database';
 import {
   AssistantModelMessage,
   generateText,
+  Output,
   streamText,
   SystemModelMessage,
   ToolModelMessage,
@@ -17,6 +18,8 @@ import globals from '@/globals';
 import tr from '@/i18n/tr';
 import { Prisma } from '@database/prisma';
 import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+import z from 'zod';
+import { generateTitle } from './service';
 
 export type AISDKMessage =
   | SystemModelMessage
@@ -200,24 +203,6 @@ export default new Elysia()
 
       if (!chat) return status(404);
 
-      if (chat.messages.length === 0) {
-        const { text } = await generateText({
-          model: google('gemma-3-4b-it'),
-          prompt: `Generate a simple and short chat title for this prompt \`${body.prompt}\`. Use given prompt language! Only generate one! Only write title! Do not use Markdown!`,
-        });
-
-        await prisma.chat
-          .update({
-            where: {
-              id: chat.id,
-            },
-            data: {
-              name: text,
-            },
-          })
-          .catch(InterceptPrismaError);
-      }
-
       const userMessageId = v7();
       const inferenceMessageId = v7();
 
@@ -241,7 +226,12 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
-      const mappedMessages = chat.messages.map((message) => {
+      if (chat.messages.length === 0) {
+        // TODO: there is a race condition here. use chat.id based title generation locking to block
+        generateTitle(chat.id, body.prompt);
+      }
+
+      const mappedMessages = chat.messages.reverse().map((message) => {
         return {
           role: SenderToRole[message.sender],
           content: message.content,
