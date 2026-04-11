@@ -10,6 +10,7 @@ import {
 import prisma from '@database';
 import { v7 } from 'uuid';
 import model from './model';
+import redis, { addBasketKey, deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -17,7 +18,7 @@ export default new Elysia()
   .use(model)
   .post(
     '/',
-    async ({ request: { headers }, status, body, session }) => {
+    async ({ status, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
@@ -29,6 +30,9 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:tabls`;
+      await deleteBasket(basket);
 
       return createdTable;
     },
@@ -51,7 +55,7 @@ export default new Elysia()
   )
   .post(
     '/dupe/:id',
-    async ({ request: { headers }, status, session, params: { id } }) => {
+    async ({ status, session, params: { id } }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
@@ -76,6 +80,9 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:tabls`;
+      await deleteBasket(basket);
+
       return status(201, createdTable);
     },
     {
@@ -97,9 +104,13 @@ export default new Elysia()
   )
   .get(
     '/',
-    async ({ request: { headers }, status, session, query }) => {
+    async ({ status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
+
+      const cacheKey = `org:${session.activeOrganizationId}:gastro:tabls:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
       const transaction = await Promise.all([
         prisma.table.findMany({
@@ -118,7 +129,7 @@ export default new Elysia()
 
       const [tables, count] = transaction;
 
-      return {
+      const res = {
         data: tables,
         meta: {
           max: query.max,
@@ -126,6 +137,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:tabls`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,
@@ -147,9 +164,13 @@ export default new Elysia()
   )
   .get(
     '/:id',
-    async ({ session, params, request: { headers }, status }) => {
+    async ({ session, params, status }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
+
+      const cacheKey = `org:${session.activeOrganizationId}:gastro:tabls:${params.id}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
       const table = await prisma.table
         .findFirst({
@@ -161,6 +182,8 @@ export default new Elysia()
         .catch(InterceptPrismaError);
 
       if (!table) return status(404, tr.error.table.notFound);
+
+      await redis.set(cacheKey, JSON.stringify(table), 'EX', 30);
 
       return table;
     },
@@ -182,7 +205,7 @@ export default new Elysia()
   )
   .patch(
     '/:id',
-    async ({ request: { headers }, status, params, body, session }) => {
+    async ({ status, params, body, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
@@ -197,6 +220,12 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(
+        `org:${session.activeOrganizationId}:gastro:tabls:${params.id}`
+      );
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:tabls`;
+      await deleteBasket(basket);
 
       return updatedTable;
     },
@@ -219,7 +248,7 @@ export default new Elysia()
   )
   .delete(
     '/:id',
-    async ({ request: { headers }, status, params, session }) => {
+    async ({ status, params, session }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
@@ -231,6 +260,12 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(
+        `org:${session.activeOrganizationId}:gastro:tabls:${params.id}`
+      );
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:tabls`;
+      await deleteBasket(basket);
 
       return deletedTable;
     },

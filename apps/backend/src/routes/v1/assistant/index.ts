@@ -3,8 +3,6 @@ import { authMacro } from '@backend/lib/auth';
 import prisma from '@database';
 import {
   AssistantModelMessage,
-  generateText,
-  Output,
   streamText,
   SystemModelMessage,
   ToolModelMessage,
@@ -18,8 +16,8 @@ import globals from '@/globals';
 import tr from '@/i18n/tr';
 import { Prisma } from '@database/prisma';
 import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import z from 'zod';
 import { generateTitle } from './service';
+import redis, { addBasketKey, deleteBasket } from '@backend/lib/redis';
 
 export type AISDKMessage =
   | SystemModelMessage
@@ -34,6 +32,13 @@ export default new Elysia()
   .get(
     '/chat',
     async ({ session, query }) => {
+      const cacheKey = `assistant:${session.userId}:chats:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+
+      if (cached) {
+        return JSON.parse(cached);
+      }
+
       const transaction = await Promise.all([
         prisma.chat.findMany({
           take: query.max,
@@ -54,7 +59,7 @@ export default new Elysia()
 
       const [chats, count] = transaction;
 
-      return {
+      const response = {
         data: chats,
         meta: {
           max: query.max,
@@ -62,6 +67,13 @@ export default new Elysia()
           total: count,
         },
       };
+
+      const ttl = 30000;
+      await redis.set(cacheKey, JSON.stringify(response), 'PX', ttl);
+      const basket = `user:${session.userId}:caches:chats`;
+      await addBasketKey(basket, cacheKey);
+
+      return response;
     },
     {
       auth: true,
@@ -79,11 +91,23 @@ export default new Elysia()
   .get(
     '/chat/:id',
     async ({ session, params, status }) => {
+      const cached = await redis.get(
+        `assistant:${session.userId}:chat:${params.id}`
+      );
+      if (cached) return JSON.parse(cached);
+
       const chat = await prisma.chat
         .findFirst({ where: { id: params.id, issuerId: session.userId } })
         .catch(InterceptPrismaError);
 
       if (!chat) return status(404, tr.error.assistant.notFound);
+
+      await redis.set(
+        `assistant:${session.userId}:chat:${params.id}`,
+        JSON.stringify(chat),
+        'PX',
+        30000
+      );
 
       return chat;
     },
@@ -103,6 +127,10 @@ export default new Elysia()
     '/chat/:id/message',
     async ({ session, params, query }) => {
       const PAGE_SIZE = 10;
+
+      const cacheKey = `assistant:chat:${params.id}:msgs:cur:${query.cursor ?? 'first'}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
       const messagesQuery: Prisma.MessageFindManyArgs = {
         orderBy: { id: 'desc' },
@@ -126,7 +154,7 @@ export default new Elysia()
           ? messages[messages.length - 1].id
           : undefined;
 
-      return {
+      const response = {
         data: messages,
         meta: {
           cursor: query.cursor,
@@ -134,6 +162,14 @@ export default new Elysia()
           cursorLength: PAGE_SIZE,
         },
       };
+
+      const ttl = query.cursor ? 30000 : 60000;
+      await redis.set(cacheKey, JSON.stringify(response), 'PX', ttl);
+
+      const basket = `user:${session.userId}:caches:chat:${params.id}:messages`;
+      await addBasketKey(basket, cacheKey);
+
+      return response;
     },
     {
       auth: true,
@@ -162,6 +198,9 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      const basket = `user:${session.userId}:caches:chats`;
+      await deleteBasket(basket);
 
       return status(201, chat);
     },
@@ -226,9 +265,19 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
-      if (chat.messages.length === 0) {
-        // TODO: there is a race condition here. use chat.id based title generation locking to block
-        generateTitle(chat.id, body.prompt);
+      if (
+        chat.messages.length === 0 &&
+        (await redis.get(`assistant:chat:${params.id}:titleGeneration`)) !== '1'
+      ) {
+        await redis.set(
+          `assistant:chat:${params.id}:titleGeneration`,
+          '1',
+          'NX'
+        );
+        generateTitle(chat.id, body.prompt).then(async () => {
+          await redis.del(`assistant:${session.userId}:chat:${params.id}`);
+          await redis.del(`assistant:chat:${params.id}:titleGeneration`);
+        });
       }
 
       const mappedMessages = chat.messages.reverse().map((message) => {
@@ -245,6 +294,7 @@ export default new Elysia()
 
       const model = google(body.model);
 
+      const basket = `user:${session.userId}:caches:chat:${params.id}:messages`;
       const inference = streamText({
         model: model,
         providerOptions: {
@@ -260,6 +310,8 @@ export default new Elysia()
               content: event.steps.map((step) => step.text).join(' '),
             },
           });
+
+          await deleteBasket(basket);
         },
         async onFinish(inference) {
           await prisma.message.update({
@@ -270,6 +322,8 @@ export default new Elysia()
               content: inference.text,
             },
           });
+
+          await deleteBasket(basket);
         },
       });
 

@@ -10,6 +10,7 @@ import {
 import prisma from '@database';
 import calculateTotal from '../service';
 import model from './model';
+import { deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -82,6 +83,9 @@ export default new Elysia()
 
       const [sell] = transaction;
 
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:sells`;
+      await deleteBasket(basket);
+
       return {
         ...sell,
         id: sell.id.toString(),
@@ -107,6 +111,7 @@ export default new Elysia()
     }
   )
   // request (refundList) -> reversal sell
+  // TODO: its not complete
   .post(
     '/refund/:id',
     async ({ params, session, user, request: { headers }, status }) => {

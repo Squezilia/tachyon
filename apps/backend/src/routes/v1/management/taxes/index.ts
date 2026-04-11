@@ -2,14 +2,11 @@ import tr from '@/i18n/tr';
 import globals from '@/globals';
 import Elysia from 'elysia';
 import { authMacro } from '@backend/lib/auth';
-import {
-  handleError,
-  InterceptPrismaError,
-  ErrorReferences,
-} from '@backend/lib/error';
+import { InterceptPrismaError, ErrorReferences } from '@backend/lib/error';
 import prisma from '@database';
 import { v7 } from 'uuid';
 import model from './model';
+import redis, { addBasketKey, deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -36,6 +33,9 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      const basket = `org:${session.activeOrganizationId}:caches:taxs`;
+      await deleteBasket(basket);
 
       return status(201, {
         ...createdTax,
@@ -86,6 +86,9 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
+      const basket = `org:${session.activeOrganizationId}:caches:taxs`;
+      await deleteBasket(basket);
+
       return status(201, {
         ...createdTax,
         rate: createdTax.rate.toString(),
@@ -114,6 +117,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:taxs:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const transaction = await Promise.all([
         prisma.tax.findMany({
           take: query.max,
@@ -131,7 +138,7 @@ export default new Elysia()
 
       const [taxes, count] = transaction;
 
-      return {
+      const res = {
         data: taxes.map((tax) => {
           return {
             ...tax,
@@ -144,6 +151,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:taxs`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,
@@ -168,6 +181,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:taxs:${params.id}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const tax = await prisma.tax
         .findFirst({
           where: {
@@ -179,10 +196,14 @@ export default new Elysia()
 
       if (!tax) return status(404, tr.error.tax.notFound);
 
-      return {
+      const res = {
         ...tax,
         rate: tax.rate.toString(),
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+
+      return res;
     },
     {
       auth: true,
@@ -217,6 +238,10 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(`org:${session.activeOrganizationId}:taxs:${params.id}`);
+      const basket = `org:${session.activeOrganizationId}:caches:taxs`;
+      await deleteBasket(basket);
 
       return {
         ...updatedTax,
@@ -254,6 +279,10 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(`org:${session.activeOrganizationId}:taxs:${params.id}`);
+      const basket = `org:${session.activeOrganizationId}:caches:taxs`;
+      await deleteBasket(basket);
 
       return {
         ...deletedTax,

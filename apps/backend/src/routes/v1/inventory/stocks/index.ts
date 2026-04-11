@@ -1,14 +1,11 @@
 import tr from '@/i18n/tr';
 import Elysia, { ElysiaCustomStatusResponse } from 'elysia';
 import { authMacro } from '@backend/lib/auth';
-import {
-  handleError,
-  InterceptPrismaError,
-  ErrorReferences,
-} from '@backend/lib/error';
+import { InterceptPrismaError, ErrorReferences } from '@backend/lib/error';
 import prisma from '@database';
 import model from './model';
 import globals from '@/globals';
+import redis, { addBasketKey, deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -29,7 +26,6 @@ export default new Elysia()
 
       const { productId, ...stockData } = body;
 
-      // Ensure product belongs to the active organization
       const product = await prisma.product
         .findFirst({
           where: {
@@ -59,6 +55,9 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
+      const stocksBasket = `org:${session.activeOrganizationId}:caches:inv:stcks`;
+      await deleteBasket(stocksBasket);
+
       return status(201, createdStock);
     },
     {
@@ -84,6 +83,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:stcks:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const transaction = await Promise.all([
         prisma.stock.findMany({
           take: query.max,
@@ -104,7 +107,7 @@ export default new Elysia()
 
       const [stocks, count] = transaction;
 
-      return {
+      const res = {
         data: stocks.map((item) => {
           return {
             ...item,
@@ -120,6 +123,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:inv:stcks`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,
@@ -145,6 +154,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:mvmnts:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const transaction = await Promise.all([
         prisma.stockMovement.findMany({
           take: query.max,
@@ -169,7 +182,7 @@ export default new Elysia()
 
       const [movements, count] = transaction;
 
-      return {
+      const res = {
         data: movements,
         meta: {
           max: query.max,
@@ -177,6 +190,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:inv:mvmnts`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,
@@ -228,6 +247,11 @@ export default new Elysia()
         .catch(InterceptPrismaError);
 
       const [stockMovement] = transaction;
+
+      const movementsBasket = `org:${session.activeOrganizationId}:caches:inv:mvmnts`;
+      const stocksBasket = `org:${session.activeOrganizationId}:caches:inv:stcks`;
+      await deleteBasket(movementsBasket);
+      await deleteBasket(stocksBasket);
 
       return stockMovement;
     },
@@ -281,6 +305,11 @@ export default new Elysia()
         .catch(InterceptPrismaError);
 
       const [stockMovement] = transaction;
+
+      const movementsBasket = `org:${session.activeOrganizationId}:caches:inv:mvmnts`;
+      const stocksBasket = `org:${session.activeOrganizationId}:caches:inv:stcks`;
+      await deleteBasket(movementsBasket);
+      await deleteBasket(stocksBasket);
 
       return stockMovement;
     },

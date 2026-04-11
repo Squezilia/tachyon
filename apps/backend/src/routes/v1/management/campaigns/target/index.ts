@@ -2,11 +2,7 @@ import tr from '@/i18n/tr';
 import globals from '@/globals';
 import Elysia from 'elysia';
 import { authMacro } from '@backend/lib/auth';
-import {
-  handleError,
-  InterceptPrismaError,
-  ErrorReferences,
-} from '@backend/lib/error';
+import { InterceptPrismaError, ErrorReferences } from '@backend/lib/error';
 import prisma from '@database';
 import model from './model';
 

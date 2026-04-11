@@ -12,6 +12,7 @@ import calculateTotal, { calculateTax, updateTaxes } from '../service';
 import { CartProductTax, Prisma } from '@database/prisma';
 import { v7 } from 'uuid';
 import model from './model';
+import { deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -81,6 +82,9 @@ export default new Elysia()
         .catch(InterceptPrismaError);
 
       const [order] = transaction;
+
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:ordrs`;
+      await deleteBasket(basket);
 
       return {
         ...order,
@@ -323,6 +327,9 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:ordrs`;
+      await deleteBasket(basket);
+
       return {
         ...transaction,
         total: transaction.total.toString(),
@@ -376,6 +383,9 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:ordrs`;
+      await deleteBasket(basket);
 
       return {
         ...updatedOrder,

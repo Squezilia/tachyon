@@ -2,13 +2,10 @@ import tr from '@/i18n/tr';
 import globals from '@/globals';
 import Elysia from 'elysia';
 import { authMacro } from '@backend/lib/auth';
-import {
-  handleError,
-  InterceptPrismaError,
-  ErrorReferences,
-} from '@backend/lib/error';
+import { InterceptPrismaError, ErrorReferences } from '@backend/lib/error';
 import prisma from '@database';
 import model from './model';
+import redis, { addBasketKey, deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -32,6 +29,9 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      const basket = `org:${session.activeOrganizationId}:caches:camps`;
+      await deleteBasket(basket);
 
       return {
         ...createdCampaign,
@@ -61,6 +61,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:camps:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const transaction = await Promise.all([
         prisma.campaign.findMany({
           take: query.max,
@@ -78,7 +82,7 @@ export default new Elysia()
 
       const [campaigns, count] = transaction;
 
-      return {
+      const res = {
         data: campaigns.map((campaign) => {
           return {
             ...campaign,
@@ -91,6 +95,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:camps`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,
@@ -115,6 +125,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:camps:${params.id}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const campaign = await prisma.campaign
         .findFirst({
           where: {
@@ -132,10 +146,14 @@ export default new Elysia()
 
       if (!campaign) return status(404, tr.error.campaign.notFound);
 
-      return {
+      const res = {
         ...campaign,
         value: campaign.value.toString(),
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+
+      return res;
     },
     {
       auth: true,
@@ -173,6 +191,10 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(`org:${session.activeOrganizationId}:camps:${params.id}`);
+      const basket = `org:${session.activeOrganizationId}:caches:camps`;
+      await deleteBasket(basket);
 
       return {
         ...updatedCampaign,
@@ -212,6 +234,10 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(`org:${session.activeOrganizationId}:camps:${params.id}`);
+      const basket = `org:${session.activeOrganizationId}:caches:camps`;
+      await deleteBasket(basket);
 
       return {
         ...deletedCampaign,

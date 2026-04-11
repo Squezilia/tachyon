@@ -9,6 +9,7 @@ import {
 import prisma from '@database';
 import Elysia from 'elysia';
 import model from './model';
+import redis, { addBasketKey } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -19,6 +20,10 @@ export default new Elysia()
     async ({ request: { headers }, status, session, query }) => {
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
+
+      const cacheKey = `org:${session.activeOrganizationId}:gastro:ordrs:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
 
       const transaction = await Promise.all([
         prisma.order.findMany({
@@ -44,7 +49,7 @@ export default new Elysia()
 
       const [orders, count] = transaction;
 
-      return {
+      const res = {
         data: orders.map((order) => ({
           ...order,
           tax: order.tax.toString(),
@@ -57,6 +62,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:gastro:ordrs`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,

@@ -10,6 +10,7 @@ import prisma from '@database';
 import { v7 } from 'uuid';
 import model from './model';
 import globals from '@/globals';
+import redis, { addBasketKey, deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -29,6 +30,9 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      const basket = `org:${session.activeOrganizationId}:caches:inv:cats`;
+      await deleteBasket(basket);
 
       return status(201, createdCategory);
     },
@@ -82,6 +86,9 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
+      const basket = `org:${session.activeOrganizationId}:caches:inv:cats`;
+      await deleteBasket(basket);
+
       return status(201, createdCategory);
     },
     {
@@ -106,6 +113,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:cats:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const transaction = await Promise.all([
         prisma.category.findMany({
           take: query.max,
@@ -123,7 +134,7 @@ export default new Elysia()
 
       const [categories, count] = transaction;
 
-      return {
+      const res = {
         data: categories,
         meta: {
           max: query.max,
@@ -131,6 +142,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:inv:cats`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,
@@ -155,6 +172,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:cats:${params.id}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const category = await prisma.category
         .findFirst({
           where: {
@@ -165,6 +186,8 @@ export default new Elysia()
         .catch(InterceptPrismaError);
 
       if (!category) return status(404, tr.error.category.notFound);
+
+      await redis.set(cacheKey, JSON.stringify(category), 'EX', 30);
 
       return category;
     },
@@ -190,6 +213,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:cats:raw`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const category = await prisma.category
         .findMany({
           where: {
@@ -201,6 +228,8 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.set(cacheKey, JSON.stringify(category), 'EX', 30);
 
       return category;
     },
@@ -239,6 +268,12 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
+      await redis.del(
+        `org:${session.activeOrganizationId}:inv:cats:${params.id}`
+      );
+      const basket = `org:${session.activeOrganizationId}:caches:inv:cats`;
+      await deleteBasket(basket);
+
       return updatedCategory;
     },
     {
@@ -272,6 +307,12 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(
+        `org:${session.activeOrganizationId}:inv:cats:${params.id}`
+      );
+      const basket = `org:${session.activeOrganizationId}:caches:inv:cats`;
+      await deleteBasket(basket);
 
       return deletedCategory;
     },

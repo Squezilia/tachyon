@@ -1,15 +1,12 @@
 import tr from '@/i18n/tr';
 import Elysia, { ElysiaCustomStatusResponse } from 'elysia';
 import { authMacro } from '@backend/lib/auth';
-import {
-  handleError,
-  InterceptPrismaError,
-  ErrorReferences,
-} from '@backend/lib/error';
+import { InterceptPrismaError, ErrorReferences } from '@backend/lib/error';
 import prisma from '@database';
 import model from './model';
 import { v7 } from 'uuid';
 import globals from '@/globals';
+import redis, { addBasketKey, deleteBasket } from '@backend/lib/redis';
 
 export default new Elysia()
   .use(authMacro)
@@ -51,6 +48,9 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      const basket = `org:${session.activeOrganizationId}:caches:inv:prods`;
+      await deleteBasket(basket);
 
       return status(201, {
         ...createdProduct,
@@ -110,6 +110,9 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
+      const basket = `org:${session.activeOrganizationId}:caches:inv:prods`;
+      await deleteBasket(basket);
+
       return status(201, {
         ...createdProduct,
         price: createdProduct.price.toString(),
@@ -138,6 +141,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:prods:p${query.page}:m${query.max}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const transaction = await Promise.all([
         prisma.product.findMany({
           take: query.max,
@@ -158,7 +165,7 @@ export default new Elysia()
 
       const [products, count] = transaction;
 
-      return {
+      const res = {
         data: products.map((product) => {
           return {
             ...product,
@@ -171,6 +178,12 @@ export default new Elysia()
           total: count,
         },
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+      const basket = `org:${session.activeOrganizationId}:caches:inv:prods`;
+      await addBasketKey(basket, cacheKey);
+
+      return res;
     },
     {
       auth: true,
@@ -196,6 +209,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:prods:${params.id}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const product = await prisma.product
         .findFirst({
           where: {
@@ -207,10 +224,14 @@ export default new Elysia()
 
       if (!product) return status(404, tr.error.product.notFound);
 
-      return {
+      const res = {
         ...product,
         price: product.price.toString(),
       };
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+
+      return res;
     },
     {
       auth: true,
@@ -234,6 +255,10 @@ export default new Elysia()
       if (!session.activeOrganizationId)
         return status(400, tr.error.organization.noActive);
 
+      const cacheKey = `org:${session.activeOrganizationId}:inv:prods:raw`;
+      const cached = await redis.get(cacheKey);
+      if (cached) return JSON.parse(cached);
+
       const product = await prisma.product
         .findMany({
           where: {
@@ -247,12 +272,16 @@ export default new Elysia()
         })
         .catch(InterceptPrismaError);
 
-      return product.map((v) => {
+      const res = product.map((v) => {
         return {
           ...v,
           price: v.price.toString(),
         };
       });
+
+      await redis.set(cacheKey, JSON.stringify(res), 'EX', 30);
+
+      return res;
     },
     {
       auth: true,
@@ -288,6 +317,12 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(
+        `org:${session.activeOrganizationId}:inv:prods:${params.id}`
+      );
+      const basket = `org:${session.activeOrganizationId}:caches:inv:prods`;
+      await deleteBasket(basket);
 
       return {
         ...updatedProduct,
@@ -325,6 +360,12 @@ export default new Elysia()
           },
         })
         .catch(InterceptPrismaError);
+
+      await redis.del(
+        `org:${session.activeOrganizationId}:inv:prods:${params.id}`
+      );
+      const basket = `org:${session.activeOrganizationId}:caches:inv:prods`;
+      await deleteBasket(basket);
 
       return {
         ...deletedProduct,
