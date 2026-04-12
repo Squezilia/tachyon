@@ -4,6 +4,8 @@ import NavCommand from './NavCommand.vue';
 import NavOrganization from './NavOrganization.vue';
 import NavTabs from './NavTabs.vue';
 import NavUser from './NavUser.vue';
+import useSideView from '~/composables/useSideView';
+import TooltipSimplified from '../TooltipSimplified.vue';
 
 export type Tabs = Record<string, Tab>;
 

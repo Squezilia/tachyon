@@ -6,6 +6,11 @@ import InputBox from './InputBox.vue';
 import type { UIChatMessage } from './Chat.vue';
 import client from '~/lib/api';
 import { ArrowLeft } from 'lucide-vue-next';
+import useAssistant from '~/composables/useAssistant';
+import useToast from '~/composables/useToast';
+import useClientError from '~/composables/useClientError';
+import SidepanelHeader from '~/components/sidepanel/Header.vue';
+import AssistantChat from '~/components/assistant/Chat.vue';
 
 const assistantMode = ref<AssistantMode>('chat');
 const assistantModel = ref<AssistantModel | 'auto-model'>('auto-model');

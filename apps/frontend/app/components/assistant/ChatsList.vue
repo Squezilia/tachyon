@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { Chat } from '@database/prisma';
 import { ArrowDown, Loader2 } from 'lucide-vue-next';
+import useClientError from '~/composables/useClientError';
 import client from '~/lib/api';
+import AlternateHeading from '../AlternateHeading.vue';
+import SubHeading from '../SubHeading.vue';
 
 const emit = defineEmits<{
   select: [Chat];

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
+import useDetailsView from '~/composables/useDetailsView';
 
 defineEmits<{
   close: [];

@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import OpenDetailsButton from './OpenDetailsButton.vue';
 import { Separator } from '../ui/separator';
+import useDetailsView from '~/composables/useDetailsView';
+import SidepanelHeader from '~/components/sidepanel/Header.vue';
+import DetailHeading from '../DetailHeading.vue';
+import ItemList from '~/components/itemList/index.vue';
+import ItemListItemArrow from '~/components/itemList/ItemArrow.vue';
+import ItemListItem from '~/components/itemList/Item.vue';
+import Chip from '../Chip.vue';
 
 const detailsView = useDetailsView();
 </script>
@@ -29,7 +36,7 @@ const detailsView = useDetailsView();
       <Separator orientation="vertical" class="h-full" />
       <div>
         <DetailHeading class="text-sm">Price</DetailHeading>
-        <span class="text-xs flex items-center gap-1.5"> 1,195.50₺ </span>
+        <span class="text-xs flex items-center gap-1.5"> ₺1,195.50 </span>
       </div>
       <Separator orientation="vertical" class="h-full" />
       <div>
@@ -61,7 +68,7 @@ const detailsView = useDetailsView();
           <div class="flex items-start w-full flex-col">
             <span class="text-sm flex w-full items-center"
               >Stock {{ n }}
-              <Chip class="text-xs ml-auto opacity-70 px-1 h-4"
+              <Chip class="text-xs ml-auto opacity-70 px-1.5 h-5"
                 >{{ Math.round(Math.random() * n) }}/{{ n }}</Chip
               >
             </span>

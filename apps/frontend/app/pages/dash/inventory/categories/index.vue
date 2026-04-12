@@ -15,6 +15,9 @@ import {
 import type { CategoryPlain } from '@database/prismabox';
 import toLocaleDate from '~/lib/toLocaleDate';
 import DataTableActions from '~/components/DataTableActions.vue';
+import useDetailsView from '~/composables/useDetailsView';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
 
 const updateState = ref(0);
 const detailsView = useDetailsView();

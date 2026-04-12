@@ -10,6 +10,9 @@ import {
 } from '@/components/ui/card';
 import type { FormType } from '~/components/resourceForms/TableForm.vue';
 import client from '~/lib/api';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
+import TableForm from '~/components/resourceForms/TableForm.vue';
 
 definePageMeta({
   middleware: ['auth'],
@@ -49,7 +52,7 @@ const namePreview = computed(() => values.value.name?.trim() || 'Yeni Masa');
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResourceFormsTableForm v-model="values" @submit="onSubmit" />
+            <TableForm v-model="values" @submit="onSubmit" />
           </CardContent>
         </Card>
       </template>

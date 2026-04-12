@@ -10,6 +10,8 @@ import { useForm, Field as VeeField } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { ArrowLeft } from 'lucide-vue-next';
 import { motion } from 'motion-v';
+import useToast from '~/composables/useToast';
+import SubHeading from '~/components/SubHeading.vue';
 
 const FormElement = ref<HTMLFormElement | null>(null);
 

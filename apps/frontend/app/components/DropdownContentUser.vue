@@ -28,7 +28,7 @@ function logout() {
 
 <template>
   <DropdownMenuContent
-    class="min-w-[220px]"
+    class="min-w-55"
     side="bottom"
     align="end"
     :side-offset="4"

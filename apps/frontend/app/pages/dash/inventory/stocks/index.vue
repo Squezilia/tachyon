@@ -8,6 +8,7 @@ import { ArrowRight, Eye, Trash2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
 import type { StockListItem } from '@backend/routes/v1/inventory/stocks/model';
+import useDetailsView from '~/composables/useDetailsView';
 
 const detailsView = useDetailsView();
 

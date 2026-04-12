@@ -5,18 +5,25 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
-  debug: true,
+  devtools: { enabled: false },
+  debug: false,
 
   imports: {
     scan: false,
   },
 
   components: {
-    dirs: [],
+    dirs: [
+      {
+        path: './components/ui',
+        pathPrefix: false,
+        ignore: ['**/*.ts'],
+      },
+    ],
   },
 
   typescript: {
+    typeCheck: false,
     tsConfig: {
       compilerOptions: {
         strict: true,
@@ -27,7 +34,7 @@ export default defineNuxtConfig({
         esModuleInterop: true,
         allowImportingTsExtensions: false,
         preserveSymlinks: false,
-        verbatimModuleSyntax: false,
+        verbatimModuleSyntax: true,
         outDir: 'dist',
         skipLibCheck: true,
 
@@ -134,6 +141,9 @@ export default defineNuxtConfig({
 
   icon: {
     mode: 'svg',
+    serverBundle: {
+      disabled: true,
+    },
   },
 
   fonts: {

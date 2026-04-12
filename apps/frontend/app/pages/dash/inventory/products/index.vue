@@ -16,6 +16,9 @@ import DataTableActions from '~/components/DataTableActions.vue';
 import type { ProductListItem } from '@backend/routes/v1/inventory/products/model';
 import toLocaleDate from '~/lib/toLocaleDate';
 import Chip from '~/components/Chip.vue';
+import useDetailsView from '~/composables/useDetailsView';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
 
 const updateState = ref(0);
 const detailsView = useDetailsView();

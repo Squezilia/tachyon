@@ -1,6 +1,10 @@
 <template>
   <ButtonGroup>
-    <Button variant="ghost" class="flex items-center text-sm gap-2.5 xs:px-2 px-1 h-8" @click="$router.push('/dash')">
+    <Button
+      variant="ghost"
+      class="flex items-center text-sm gap-2.5 xs:px-2 px-1 h-8"
+      @click="$router.push('/dash')"
+    >
       <Avatar class="size-7 xs:hidden">
         <AvatarImage :src="activeOrganization.data?.logo || ''" />
         <AvatarFallback>

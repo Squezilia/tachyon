@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { motion } from 'motion-v';
 import Navigation from '~/components/navigation/Navigation.vue';
+import useSideView from '~/composables/useSideView';
+
+const LazySidepanel = defineAsyncComponent(
+  () => import('~/components/sidepanel/index.vue')
+);
+const LazyAssistant = defineAsyncComponent(
+  () => import('~/components/assistant/index.vue')
+);
+const LazyDetailForms = defineAsyncComponent(
+  () => import('~/components/detailForms/index.vue')
+);
 
 const sideView = useSideView();
 </script>

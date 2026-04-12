@@ -15,6 +15,8 @@ import * as z from 'zod';
 import { Field } from '~/components/ui/field';
 import client from '~/lib/api';
 import type { ProductRaw } from '@backend/routes/v1/inventory/products/model';
+import useClientError from '~/composables/useClientError';
+import FormBase from './FormBase.vue';
 
 const router = useRouter();
 const products = ref<(typeof ProductRaw.static)[]>([]);
@@ -52,7 +54,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <ResourceFormsFormBase
+  <FormBase
     :model-value="modelValue"
     :is-submitting="isSubmitting"
     class="space-y-6"
@@ -177,5 +179,5 @@ onMounted(async () => {
         <span>{{ isSubmitting ? 'Creating...' : 'Create stock' }}</span>
       </Button>
     </div>
-  </ResourceFormsFormBase>
+  </FormBase>
 </template>

@@ -13,6 +13,8 @@ import {
 } from '~/components/ui/number-field';
 import type { CategoryRaw } from '@backend/routes/v1/inventory/categories/model';
 import client from '~/lib/api';
+import useClientError from '~/composables/useClientError';
+import FormBase from './FormBase.vue';
 
 const formSchema = z.object({
   name: z
@@ -51,7 +53,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <ResourceFormsFormBase
+  <FormBase
     :model-value="modelValue"
     :is-submitting="isSubmitting"
     class="space-y-6"
@@ -139,5 +141,5 @@ onMounted(async () => {
         <Plus v-if="!isSubmitting" />
       </Button>
     </div>
-  </ResourceFormsFormBase>
+  </FormBase>
 </template>

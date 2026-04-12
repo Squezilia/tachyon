@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import OpenDetailsButton from './OpenDetailsButton.vue';
 import { Separator } from '../ui/separator';
+import useDetailsView from '~/composables/useDetailsView';
+import SidepanelHeader from '~/components/sidepanel/Header.vue';
+import DetailHeading from '../DetailHeading.vue';
+import ItemList from '~/components/itemList/index.vue';
+import ItemListItemArrow from '~/components/itemList/ItemArrow.vue';
+import ItemListItem from '~/components/itemList/Item.vue';
 
 const detailsView = useDetailsView();
 </script>

@@ -1,6 +1,7 @@
 import { Chat } from '@database/prisma/client';
 import { UIChatMessage } from '~/components/assistant/Chat.vue';
 import client from '~/lib/api';
+import useClientError from './useClientError';
 
 export default function useAssistant() {
   const { $api } = useNuxtApp();

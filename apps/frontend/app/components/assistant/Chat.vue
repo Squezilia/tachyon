@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AssistantMessageSender } from '@database/prisma/enums';
+import MarkdownContent from '../MarkdownContent.vue';
 
 const props = defineProps<{
   history: UIChatMessage[];

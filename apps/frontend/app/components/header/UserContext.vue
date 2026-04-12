@@ -2,6 +2,7 @@
 import { ChevronDown } from 'lucide-vue-next';
 import { authClient } from '~/lib/auth';
 import shortenName from '~/lib/shortenName';
+import DropdownContentUser from '../DropdownContentUser.vue';
 
 const user = authClient.useSession();
 </script>

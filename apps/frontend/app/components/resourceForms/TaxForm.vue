@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import * as z from 'zod';
+import FormBase from './FormBase.vue';
 
 const router = useRouter();
 
@@ -31,7 +32,7 @@ defineEmits<{
 </script>
 
 <template>
-  <ResourceFormsFormBase
+  <FormBase
     :model-value="modelValue"
     :is-submitting="isSubmitting"
     class="space-y-6"
@@ -151,5 +152,5 @@ defineEmits<{
         <span>{{ isSubmitting ? 'Creating...' : 'Create tax' }}</span>
       </Button>
     </div>
-  </ResourceFormsFormBase>
+  </FormBase>
 </template>

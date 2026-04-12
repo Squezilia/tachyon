@@ -12,6 +12,8 @@ import formatPrice from '@/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/StockForm.vue';
 import type { ProductRaw } from '@backend/routes/v1/inventory/products/model';
 import client from '~/lib/api';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
 
 definePageMeta({
   middleware: ['auth'],
@@ -74,7 +76,7 @@ const selectedProduct = computed(() => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResourceFormsStockForm v-model="values" @submit="onSubmit" />
+            <StockForm v-model="values" @submit="onSubmit" />
           </CardContent>
         </Card>
       </template>

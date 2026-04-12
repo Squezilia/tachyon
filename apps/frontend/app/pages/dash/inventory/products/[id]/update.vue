@@ -11,6 +11,9 @@ import {
 import formatPrice from '~/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/ProductForm.vue';
 import client from '~/lib/api';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
+import ProductForm from '~/components/resourceForms/ProductForm.vue';
 
 definePageMeta({
   middleware: ['auth'],
@@ -81,7 +84,7 @@ onMounted(async () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResourceFormsProductForm v-model="values" @submit="onSubmit" />
+            <ProductForm v-model="values" @submit="onSubmit" />
           </CardContent>
         </Card>
       </template>

@@ -11,6 +11,8 @@ import {
 import formatPrice from '@/lib/formatPrice';
 import type { FormType } from '~/components/resourceForms/TaxForm.vue';
 import client from '~/lib/api';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
 
 definePageMeta({
   middleware: ['auth'],
@@ -82,7 +84,7 @@ const formattedRate = computed(() => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResourceFormsTaxForm v-model="values" @submit="onSubmit" />
+            <TaxForm v-model="values" @submit="onSubmit" />
           </CardContent>
         </Card>
       </template>

@@ -15,6 +15,8 @@ import {
 import DataTableActions from '~/components/DataTableActions.vue';
 import toLocaleDate from '~/lib/toLocaleDate';
 import type { TablePlain } from '@database/prismabox';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
 
 const updateState = ref(0);
 

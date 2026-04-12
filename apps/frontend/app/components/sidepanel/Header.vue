@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { X } from 'lucide-vue-next';
+import useSideView from '~/composables/useSideView';
+import DetailHeading from '../DetailHeading.vue';
 </script>
 
 <template>

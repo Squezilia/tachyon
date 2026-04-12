@@ -24,6 +24,7 @@ import {
 } from '~/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '~/components/ui/radio-group';
 import type { AcceptableValue } from 'reka-ui';
+import useToast from '~/composables/useToast';
 
 definePageMeta({
   middleware: ['auth'],

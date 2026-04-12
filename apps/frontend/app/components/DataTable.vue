@@ -149,7 +149,7 @@ function nextPage() {
           :model-value="String(pagination.pageSize)"
           @update:model-value="(v: string) => (pagination.pageSize = Number(v))"
         >
-          <SelectTrigger size="sm" class="h-8 w-[120px]">
+          <SelectTrigger size="sm" class="h-8 w-30">
             <SelectValue placeholder="Page size" />
           </SelectTrigger>
           <SelectContent>

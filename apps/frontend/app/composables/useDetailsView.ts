@@ -1,4 +1,5 @@
-import { ResourceType } from '~/components/detailForms/index.vue';
+import type { ResourceType } from '~/components/detailForms/index.vue';
+import useSideView from './useSideView';
 
 export default function useDetailsView() {
   const target = useState<string | null>('details:target', () => null);

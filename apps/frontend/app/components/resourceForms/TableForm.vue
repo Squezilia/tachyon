@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import * as z from 'zod';
 import { Field, FieldLabel } from '~/components/ui/field';
+import FormBase from './FormBase.vue';
 
 const formSchema = z.object({
   name: z
@@ -28,7 +29,7 @@ defineEmits<{
 </script>
 
 <template>
-  <ResourceFormsFormBase
+  <FormBase
     :model-value="modelValue"
     :is-submitting="isSubmitting"
     class="space-y-6"
@@ -62,5 +63,5 @@ defineEmits<{
         <Plus v-if="!isSubmitting" />
       </Button>
     </div>
-  </ResourceFormsFormBase>
+  </FormBase>
 </template>

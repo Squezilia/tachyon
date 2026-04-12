@@ -4,7 +4,9 @@ import { toTypedSchema } from '@vee-validate/zod';
 import { ArrowRight } from 'lucide-vue-next';
 import { useForm, Field as VeeField } from 'vee-validate';
 import * as z from 'zod';
+import SubHeading from '~/components/SubHeading.vue';
 import { FieldError } from '~/components/ui/field';
+import useToast from '~/composables/useToast';
 
 const FormElement = ref<HTMLFormElement | null>(null);
 

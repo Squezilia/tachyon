@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Copy, Edit3, Eye, Trash2 } from 'lucide-vue-next';
 import DataTableActions from '~/components/DataTableActions.vue';
 import type { TaxPlain } from '@database/prismabox';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
 
 const updateState = ref(0);
 

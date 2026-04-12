@@ -17,6 +17,7 @@
 <script lang="ts" setup>
 import { authClient } from '~/lib/auth';
 import shortenName from '~/lib/shortenName';
+import DropdownContentUser from '../DropdownContentUser.vue';
 
 const session = authClient.useSession();
 </script>

@@ -1,5 +1,6 @@
-import { EdenFetchError } from '@elysiajs/eden';
-import { ErrorResponse } from '@backend/globals';
+import type { EdenFetchError } from '@elysiajs/eden';
+import type { ErrorResponse } from '@backend/globals';
+import useToast from './useToast';
 
 export default function useClientError(error: EdenFetchError) {
   if (error.value) {

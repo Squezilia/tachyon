@@ -5,7 +5,7 @@ import {
   PreTrainedTokenizer,
   softmax,
 } from '@huggingface/transformers';
-import {
+import type {
   AssistantModel,
   UIAssistantModel,
 } from '~/components/assistant/InputBox.vue';

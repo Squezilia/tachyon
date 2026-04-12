@@ -106,7 +106,7 @@ async function fetchSells(params: { page: number; max: number }) {
 <template>
   <div>
     <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl md:text-4xl font-semibold">Sells</h1>
+      <h1 class="text-2xl md:text-4xl font-semibold">Satışlar</h1>
     </div>
     <ServerDataTable :columns="columns" :fetch-page="fetchSells" />
   </div>

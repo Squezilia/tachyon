@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { watch } from 'vue';
 import { authClient } from '@/lib/auth';
+import useToast from '~/composables/useToast';
 
 definePageMeta({
   middleware: ['auth'],

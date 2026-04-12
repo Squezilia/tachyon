@@ -10,6 +10,9 @@ import {
 } from '@/components/ui/card';
 import type { FormType } from '~/components/resourceForms/CategoryForm.vue';
 import client from '~/lib/api';
+import useClientError from '~/composables/useClientError';
+import useToast from '~/composables/useToast';
+import CategoryForm from '~/components/resourceForms/CategoryForm.vue';
 
 definePageMeta({
   middleware: ['auth'],
@@ -56,7 +59,7 @@ const namePreview = computed(
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResourceFormsCategoryForm v-model="values" @submit="onSubmit" />
+            <CategoryForm v-model="values" @submit="onSubmit" />
           </CardContent>
         </Card>
       </template>

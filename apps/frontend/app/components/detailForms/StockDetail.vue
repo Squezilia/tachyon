@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import OpenDetailsButton from './OpenDetailsButton.vue';
 import { Separator } from '../ui/separator';
+import useDetailsView from '~/composables/useDetailsView';
+import SidepanelHeader from '~/components/sidepanel/Header.vue';
+import DetailHeading from '../DetailHeading.vue';
+import ItemList from '~/components/itemList/index.vue';
+import ItemListItemArrow from '~/components/itemList/ItemArrow.vue';
+import ItemListItem from '~/components/itemList/Item.vue';
+import Chip from '../Chip.vue';
 
 const detailsView = useDetailsView();
 </script>
@@ -72,7 +79,7 @@ const detailsView = useDetailsView();
               <span class="text-sm flex w-full items-center">19 Jul 2019 </span>
               <span class="text-xs opacity-70">Product</span>
             </div>
-            <Chip class="text-xs ml-auto opacity-70 px-1 h-4">{{
+            <Chip class="text-xs ml-auto opacity-70 h-5 px-1.5">{{
               Math.round(Math.random() * 500) - 250
             }}</Chip>
           </div>

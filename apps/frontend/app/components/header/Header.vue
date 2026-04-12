@@ -5,6 +5,7 @@ import UserContext from './UserContext.vue';
 import NoUserContext from './NoUserContext.vue';
 import type { Tab } from '../navigation/Navigation.vue';
 import NavTabs from '../navigation/NavTabs.vue';
+
 const session = authClient.useSession();
 
 const tabs = ref<Tab>({
@@ -23,7 +24,7 @@ const tabs = ref<Tab>({
     class="z-50 w-full fixed top-0 left-0 flex items-center justify-center md:px-12 px-4"
   >
     <div
-      class="h-14 z-50 bg-navigation px-2.5 rounded-xl backdrop-blur-sm border rounded-t-none border-t-0 max-w-[1300px] w-full flex justify-between"
+      class="h-14 z-50 bg-navigation px-2.5 rounded-xl backdrop-blur-sm border rounded-t-none border-t-0 max-w-325 w-full flex justify-between"
     >
       <div class="flex items-center">
         <div class="flex gap-2.5 items-center">
