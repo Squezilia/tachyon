@@ -1,5 +1,5 @@
 <template>
-  <h4 class="scroll-m-20 text-lg font-semibold tracking-tight">
+  <h5 class="scroll-m-20 font-semibold tracking-tight">
     <slot />
-  </h4>
+  </h5>
 </template>

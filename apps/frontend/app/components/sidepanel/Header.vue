@@ -3,9 +3,9 @@ import { X } from 'lucide-vue-next';
 </script>
 
 <template>
-  <div class="flex items-center gap-2 p-2.5">
+  <div class="flex items-center gap-2 p-2.5 py-1.5 border-b">
     <DetailHeading
-      class="flex items-center gap-2 truncate text-ellipsis max-w-67"
+      class="flex text-sm items-center gap-2 truncate text-ellipsis max-w-67"
     >
       <slot />
     </DetailHeading>

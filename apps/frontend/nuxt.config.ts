@@ -6,7 +6,15 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  debug: false,
+  debug: true,
+
+  imports: {
+    scan: false,
+  },
+
+  components: {
+    dirs: [],
+  },
 
   typescript: {
     tsConfig: {
@@ -57,6 +65,7 @@ export default defineNuxtConfig({
 
   experimental: {
     typedPages: true,
+    buildCache: true,
   },
 
   modules: [
@@ -71,6 +80,11 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/tailwind.css'],
   vite: {
+    server: {
+      watch: {
+        ignored: ['**/backend/**', '**/packages/database/**'],
+      },
+    },
     optimizeDeps: {
       include: [
         '@vee-validate/zod',

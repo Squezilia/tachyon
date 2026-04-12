@@ -87,7 +87,7 @@ function abort() {
 </script>
 
 <template>
-  <SidepanelHeader>
+  <SidepanelHeader class="mb-1.5">
     <Button
       v-if="assistant.chat.value"
       variant="ghost"

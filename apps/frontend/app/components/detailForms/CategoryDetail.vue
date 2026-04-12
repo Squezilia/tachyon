@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ArrowRight, Edit3 } from 'lucide-vue-next';
 import OpenDetailsButton from './OpenDetailsButton.vue';
+import { Separator } from '../ui/separator';
 
 const detailsView = useDetailsView();
 </script>
 
 <template>
-  <SidepanelHeader>
+  <SidepanelHeader class="mb-1.5">
     <OpenDetailsButton
       :to="`/dash/inventory/categories/${detailsView.target.value}`"
     />
@@ -14,37 +14,53 @@ const detailsView = useDetailsView();
   </SidepanelHeader>
 
   <div class="p-2.5 pt-0 flex flex-col gap-2.5">
-    <SmallHeading class="flex group/name">
-      Category Name
-      <NuxtLink
-        :to="`/dash/inventory/categories/${detailsView.target.value}/update`"
-        class="ml-auto opacity-0 transition-opacity group-hover/name:opacity-75"
-      >
-        <Button class="size-8" variant="ghost" size="icon"><Edit3 /></Button>
-      </NuxtLink>
-    </SmallHeading>
+    <div class="flex items-center w-full gap-2.5">
+      <div class="flex flex-col">
+        <DetailHeading class="scroll-m-0">Category</DetailHeading>
+      </div>
+    </div>
+    <div class="flex items-center justify-around w-full">
+      <div>
+        <DetailHeading class="text-sm">Created At</DetailHeading>
+        <span class="text-xs">19 Jul 2019</span>
+      </div>
+      <Separator orientation="vertical" class="h-full" />
+      <div>
+        <DetailHeading class="text-sm">Created By</DetailHeading>
+        <span class="text-xs flex items-center gap-1.5">
+          <Avatar class="size-5">
+            <AvatarImage src="" />
+            <AvatarFallback>A</AvatarFallback>
+          </Avatar>
+          Adam
+        </span>
+      </div>
+      <Separator orientation="vertical" class="h-full" />
+      <div>
+        <DetailHeading class="text-sm">Updated At</DetailHeading>
+        <span class="text-xs">19 Jul 2019</span>
+      </div>
+    </div>
 
-    <AlternateHeading>Products</AlternateHeading>
-    <ScrollArea class="max-h-60 border rounded-xl group/area">
+    <Separator orientation="horizontal" class="w-full" />
+
+    <DetailHeading class="font-heading">Products (20)</DetailHeading>
+    <ItemList>
       <div v-for="n in 20" :key="n">
-        <button
-          class="flex transition items-center gap-4 p-2.5 group-hover/area:opacity-40 hover:opacity-100! group/productListItem cursor-pointer w-full"
-          @click="detailsView.open(n + '', 'product')"
-        >
+        <ItemListItem @click="detailsView.open(n + '', 'product')">
           <Skeleton class="size-8" />
-          <div class="flex flex-col">
-            <DetailHeading>Product {{ n }}</DetailHeading>
+          <div class="flex items-start flex-col">
+            <span class="text-sm">Product {{ n }}</span>
+            <span class="text-xs opacity-70">Category</span>
           </div>
-          <ArrowRight
-            class="size-4 opacity-0 ml-auto mr-1.5 group-hover/productListItem:opacity-75 transition"
-          />
-        </button>
+          <ItemListItemArrow />
+        </ItemListItem>
         <Separator
           v-if="n !== 20"
           orientation="horizontal"
           class="mx-auto max-w-[75%]"
         />
       </div>
-    </ScrollArea>
+    </ItemList>
   </div>
 </template>
