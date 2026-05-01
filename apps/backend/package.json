@@ -22,6 +22,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
     "@bogeychan/elysia-logger": "^0.1.10",
+    "@clickhouse/client": "^1.18.2",
     "@elysiajs/cors": "^1.4.1",
     "@elysiajs/cron": "^1.4.1",
     "@elysiajs/eden": "^1.4.8",

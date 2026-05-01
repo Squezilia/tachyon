@@ -583,6 +583,16 @@ model CartProduct {
   @@index([orderId, productId])
 }
 
+//
+// Assistant
+//
+enum AssistantMessageSender {
+  USER
+  AGENT
+  TOOL
+  SYSTEM
+}
+
 model Chat {
   id String @id @default(uuid(7))
 
@@ -592,13 +602,6 @@ model Chat {
   name String
 
   messages Message[]
-}
-
-enum AssistantMessageSender {
-  USER
-  AGENT
-  TOOL
-  SYSTEM
 }
 
 model Message {

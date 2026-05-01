@@ -18,6 +18,7 @@
       "dependencies": {
         "@ai-sdk/google": "^3.0.43",
         "@bogeychan/elysia-logger": "^0.1.10",
+        "@clickhouse/client": "^1.18.2",
         "@elysiajs/cors": "^1.4.1",
         "@elysiajs/cron": "^1.4.1",
         "@elysiajs/eden": "^1.4.8",
@@ -237,6 +238,10 @@
     "@clack/core": ["@clack/core@1.1.0", "", { "dependencies": { "sisteransi": "^1.0.5" } }, "sha512-SVcm4Dqm2ukn64/8Gub2wnlA5nS2iWJyCkdNHcvNHPIeBTGojpdJ+9cZKwLfmqy7irD4N5qLteSilJlE0WLAtA=="],
 
     "@clack/prompts": ["@clack/prompts@1.1.0", "", { "dependencies": { "@clack/core": "1.1.0", "sisteransi": "^1.0.5" } }, "sha512-pkqbPGtohJAvm4Dphs2M8xE29ggupihHdy1x84HNojZuMtFsHiUlRvqD24tM2+XmI+61LlfNceM3Wr7U5QES5g=="],
+
+    "@clickhouse/client": ["@clickhouse/client@1.18.2", "", { "dependencies": { "@clickhouse/client-common": "1.18.2" } }, "sha512-fuquQswRSHWM6D079ZeuGqkMOsqtcUPL06UdTnowmoeeYjVrqisfVmvnw8pc3OeKS4kVb91oygb/MfLDiMs0TQ=="],
+
+    "@clickhouse/client-common": ["@clickhouse/client-common@1.18.2", "", {}, "sha512-J0SG6q9V31ydxonglpj9xhNRsUxCsF71iEZ784yldqMYwsHixj/9xHFDgBDX3DuMiDx/kPDfXnf+pimp08wIBA=="],
 
     "@cloudflare/kv-asset-handler": ["@cloudflare/kv-asset-handler@0.4.2", "", {}, "sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ=="],
 
